@@ -2,6 +2,7 @@ import 'package:project_gaia/ui/bottom_sheets/notice/notice_sheet.dart';
 import 'package:project_gaia/ui/dialogs/info_alert/info_alert_dialog.dart';
 import 'package:project_gaia/ui/views/home/home_view.dart';
 import 'package:project_gaia/ui/views/startup/startup_view.dart';
+import 'package:project_gaia/ui/views/mainlayout/main_layout.dart';
 import 'package:stacked/stacked_annotations.dart';
 import 'package:stacked_services/stacked_services.dart';
 // @stacked-import
@@ -10,6 +11,7 @@ import 'package:stacked_services/stacked_services.dart';
   routes: [
     MaterialRoute(page: HomeView),
     MaterialRoute(page: StartupView),
+    MaterialRoute(page: MainLayout, initial: true)
     // @stacked-route
   ],
   dependencies: [
