@@ -14,12 +14,23 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: <Widget>[
-        const Center(child: Text("Home Page")),
-        const Center(child: Text("Stats Page")),
-        const Center(child: Text("Chat Page")),
-        const Center(child: Text("Settings Page"))
-      ][_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: const [
+          Center(
+            child: Text("Home Page"),
+          ),
+          Center(
+            child: Text("Stats Page"),
+          ),
+          Center(
+            child: Text("Chat Page"),
+          ),
+          Center(
+            child: Text("Settings Page"),
+          ),
+        ],
+      ),
       bottomNavigationBar: BottomNavbar(
         currentPageIndex: _currentIndex,
         onDestinationSelected: (int index) {
