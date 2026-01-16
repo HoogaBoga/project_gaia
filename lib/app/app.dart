@@ -4,12 +4,16 @@ import 'package:project_gaia/ui/views/home/home_view.dart';
 import 'package:project_gaia/ui/views/startup/startup_view.dart';
 import 'package:stacked/stacked_annotations.dart';
 import 'package:stacked_services/stacked_services.dart';
+import 'package:project_gaia/ui/views/splash/splash_view.dart';
+import 'package:project_gaia/ui/views/splash/splash_viewmodel.dart';
+
 // @stacked-import
 
 @StackedApp(
   routes: [
     MaterialRoute(page: HomeView),
     MaterialRoute(page: StartupView),
+    MaterialRoute(page: SplashView),
     // @stacked-route
   ],
   dependencies: [
