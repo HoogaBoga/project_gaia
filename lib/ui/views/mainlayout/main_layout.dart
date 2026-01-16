@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_gaia/ui/widgets/bottom_navbar.dart';
+import 'package:project_gaia/ui/views/settings/settings_view.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -27,7 +28,7 @@ class _MainLayoutState extends State<MainLayout> {
             child: Text("Chat Page"),
           ),
           Center(
-            child: Text("Settings Page"),
+            child: SettingsView(),
           ),
         ],
       ),
