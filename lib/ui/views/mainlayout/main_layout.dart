@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project_gaia/ui/views/stats/stats_page_view.dart';
 import 'package:project_gaia/ui/widgets/bottom_navbar.dart';
 
 class MainLayout extends StatefulWidget {
@@ -16,17 +17,15 @@ class _MainLayoutState extends State<MainLayout> {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
-          Center(
+        children: [
+          const Center(
             child: Text("Home Page"),
           ),
-          Center(
-            child: Text("Stats Page"),
-          ),
-          Center(
+          StatsPageView(),
+          const Center(
             child: Text("Chat Page"),
           ),
-          Center(
+          const Center(
             child: Text("Settings Page"),
           ),
         ],
