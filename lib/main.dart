@@ -4,6 +4,7 @@ import 'package:project_gaia/app/app.dialogs.dart';
 import 'package:project_gaia/app/app.locator.dart';
 import 'package:project_gaia/app/app.router.dart';
 import 'package:stacked_services/stacked_services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +24,11 @@ class MainApp extends StatelessWidget {
       onGenerateRoute: StackedRouter().onGenerateRoute,
       navigatorKey: StackedService.navigatorKey,
       navigatorObservers: [StackedService.routeObserver],
+      theme: ThemeData(
+        textTheme: GoogleFonts.interTextTheme(
+          Theme.of(context).textTheme,
+        ),
+      ),
     );
   }
 }
