@@ -54,7 +54,7 @@ class StatsPageView extends StackedView<StatsPageViewmodel> {
                     style: TextStyle(color: Color(0xFF6B6B6B)),
                   ),
                   const SizedBox(
-                    height: 20,
+                    height: 50,
                   ),
                   SizedBox(
                     height: 300,
@@ -63,17 +63,17 @@ class StatsPageView extends StackedView<StatsPageViewmodel> {
                       alignment: Alignment.center,
                       children: [
                         _buildRing(
-                            radius: 125.0,
+                            radius: 155.0,
                             percent: viewModel.waterLevel,
                             color: const Color(0xFF1250AE),
                             text: "Water"),
                         _buildRing(
-                            radius: 100.0,
+                            radius: 120.0,
                             percent: viewModel.humidityLevel,
                             color: const Color(0xFF12C8ED),
                             text: "Humidity"),
                         _buildRing(
-                            radius: 75.0,
+                            radius: 85.0,
                             percent: viewModel.sunlightLevel,
                             color: const Color(0xFFEDBA12),
                             text: "Sunlight"),
@@ -129,7 +129,6 @@ class StatsPageView extends StackedView<StatsPageViewmodel> {
           radius: radius,
           percent: percent,
           progressColor: color,
-          backgroundColor: Colors.white,
           lineWidth: 10.0,
           animation: true,
           circularStrokeCap: CircularStrokeCap.round,
@@ -138,7 +137,7 @@ class StatsPageView extends StackedView<StatsPageViewmodel> {
           radius: radius,
           text: text,
           textStyle: const TextStyle(
-              fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black),
+              fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black),
           startAngleAlignment: StartAngleAlignment.center,
           placement: Placement.outside,
           direction: Direction.clockwise,
