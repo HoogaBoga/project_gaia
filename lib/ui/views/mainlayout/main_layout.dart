@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_gaia/ui/widgets/bottom_navbar.dart';
+import 'package:project_gaia/ui/views/home/home_view.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -14,12 +15,12 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color (0xFF0A2342),
       body: IndexedStack(
         index: _currentIndex,
         children: const [
-          Center(
-            child: Text("Home Page"),
-          ),
+         HomeView(),
+         ,
           Center(
             child: Text("Stats Page"),
           ),

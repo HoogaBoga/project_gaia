@@ -1,36 +1,22 @@
-import 'package:project_gaia/app/app.bottomsheets.dart';
-import 'package:project_gaia/app/app.dialogs.dart';
-import 'package:project_gaia/app/app.locator.dart';
-import 'package:project_gaia/ui/common/app_strings.dart';
 import 'package:stacked/stacked.dart';
-import 'package:stacked_services/stacked_services.dart';
 
 class HomeViewModel extends BaseViewModel {
-  final _dialogService = locator<DialogService>();
-  final _bottomSheetService = locator<BottomSheetService>();
+  // Placeholder data assumed to be passed from the previous splash/setup screen.
+  final String plantName = 'Gaia';
+  final String plantSpecies = 'Ficus pseudopalma';
 
-  String get counterLabel => 'Counter is: $_counter';
+  // Current HP percentage (0.0 to 1.0).
+  double currentHpPercent = 0.65;
 
-  int _counter = 0;
+  // Y-axis offsets for the background circle layers.
+  // These variables are set up here so they can be easily animated later
+  // by an AnimationController in the View updating these values.
+  double layer1Offset = -150.0;
+  double layer2Offset = 50.0;
+  double layer3Offset = 250.0;
 
-  void incrementCounter() {
-    _counter++;
-    rebuildUi();
-  }
-
-  void showDialog() {
-    _dialogService.showCustomDialog(
-      variant: DialogType.infoAlert,
-      title: 'Stacked Rocks!',
-      description: 'Give stacked $_counter stars on Github',
-    );
-  }
-
-  void showBottomSheet() {
-    _bottomSheetService.showCustomSheet(
-      variant: BottomSheetType.notice,
-      title: ksHomeBottomSheetTitle,
-      description: ksHomeBottomSheetDescription,
-    );
+  void initialise() {
+    // Initialization logic (e.g., starting animations) would go here.
+    notifyListeners();
   }
 }
