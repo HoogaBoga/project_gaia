@@ -1,36 +1,17 @@
-import 'package:project_gaia/app/app.bottomsheets.dart';
-import 'package:project_gaia/app/app.dialogs.dart';
-import 'package:project_gaia/app/app.locator.dart';
-import 'package:project_gaia/ui/common/app_strings.dart';
 import 'package:stacked/stacked.dart';
-import 'package:stacked_services/stacked_services.dart';
 
 class HomeViewModel extends BaseViewModel {
-  final _dialogService = locator<DialogService>();
-  final _bottomSheetService = locator<BottomSheetService>();
+  final String plantName = 'Gaia';
+  final String plantSpecies = 'Ficus pseudopalma';
 
-  String get counterLabel => 'Counter is: $_counter';
+  double currentHpPercent = 0.65;
 
-  int _counter = 0;
+  double layer1TargetY = 80.0;
+  double layer2TargetY = 250.0;
+  double layer3TargetY = 420.0;
 
-  void incrementCounter() {
-    _counter++;
-    rebuildUi();
-  }
-
-  void showDialog() {
-    _dialogService.showCustomDialog(
-      variant: DialogType.infoAlert,
-      title: 'Stacked Rocks!',
-      description: 'Give stacked $_counter stars on Github',
-    );
-  }
-
-  void showBottomSheet() {
-    _bottomSheetService.showCustomSheet(
-      variant: BottomSheetType.notice,
-      title: ksHomeBottomSheetTitle,
-      description: ksHomeBottomSheetDescription,
-    );
+  void initialise() {
+    // Initialization logic (e.g., starting animations) would go here.
+    notifyListeners();
   }
 }
