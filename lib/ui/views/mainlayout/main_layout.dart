@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project_gaia/ui/views/stats/stats_page_view.dart';
 import 'package:project_gaia/ui/widgets/bottom_navbar.dart';
 import 'package:project_gaia/ui/views/home/home_view.dart'; 
 import 'package:project_gaia/ui/views/settings/settings_view.dart';
