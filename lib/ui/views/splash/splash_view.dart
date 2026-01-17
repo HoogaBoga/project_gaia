@@ -18,10 +18,11 @@ class SplashView extends StackedView<SplashViewModel> {
             bottom: 0,
             left: 0,
             right: 0,
+            height: MediaQuery.of(context).size.height * 0.5,
             child: Image.asset(
-              'assets/images/earf.png',
+              'assets/images/earf1.png',
               width: MediaQuery.of(context).size.width,
-              fit: BoxFit.contain,
+              fit: BoxFit.fitHeight,
               alignment: Alignment.bottomCenter,
             ),
           ),
@@ -30,7 +31,7 @@ class SplashView extends StackedView<SplashViewModel> {
             child: Column(
               children: [
                 const SizedBox(height: 60),
-                _buildHeader(),
+                _buildHeader(viewModel),
                 const SizedBox(height: 30),
                 _buildInputField(viewModel),
                 const SizedBox(height: 20),
@@ -75,13 +76,26 @@ class SplashView extends StackedView<SplashViewModel> {
     );
   }
 
-  Widget _buildHeader() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 40),
+  Widget _buildHeader(SplashViewModel viewModel) {
+    String headerText;
+    switch (viewModel.currentStep) {
+      case OnboardingStep.plantSpecies:
+        headerText = 'To begin, take an image of your plant or manually enter the plant species!';
+        break;
+      case OnboardingStep.plantName:
+        headerText = 'What would you like to name your plant?';
+        break;
+      case OnboardingStep.plantPersonality:
+        headerText = 'What type of personality would you like your plant to have?';
+        break;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
       child: Text(
-        'To begin, take an image of your plant or manually enter the plant species!',
+        headerText,
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: const TextStyle(
           fontFamily: 'Inter',
           fontWeight: FontWeight.w700,
           fontSize: 30,
@@ -93,6 +107,17 @@ class SplashView extends StackedView<SplashViewModel> {
   }
 
   Widget _buildInputField(SplashViewModel viewModel) {
+    switch (viewModel.currentStep) {
+      case OnboardingStep.plantSpecies:
+        return _buildPlantSpeciesInput(viewModel);
+      case OnboardingStep.plantName:
+        return _buildPlantNameInput(viewModel);
+      case OnboardingStep.plantPersonality:
+        return _buildPersonalityDropdown(viewModel);
+    }
+  }
+
+  Widget _buildPlantSpeciesInput(SplashViewModel viewModel) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 50),
       child: Container(
@@ -131,6 +156,80 @@ class SplashView extends StackedView<SplashViewModel> {
     );
   }
 
+  Widget _buildPlantNameInput(SplashViewModel viewModel) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 50),
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: TextField(
+          controller: viewModel.plantNameController,
+          style: const TextStyle(color: Colors.black, fontSize: 16),
+          decoration: const InputDecoration(
+            hintText: 'Enter plant name...',
+            hintStyle: TextStyle(color: Color(0xFF7D7D7D)),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(horizontal: 20),
+          ),
+          onChanged: viewModel.onPlantNameChanged,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPersonalityDropdown(SplashViewModel viewModel) {
+    const personalities = [
+      'Friendly',
+      'Calm',
+      'Energetic',
+      'Wise',
+      'Playful',
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 50),
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: viewModel.plantPersonality,
+            hint: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Select personality...',
+                style: TextStyle(color: Color(0xFF7D7D7D), fontSize: 16),
+              ),
+            ),
+            isExpanded: true,
+            icon: const Padding(
+              padding: EdgeInsets.only(right: 20),
+              child: Icon(Icons.arrow_drop_down, color: Color(0xFF14932C)),
+            ),
+            dropdownColor: Colors.white,
+            style: const TextStyle(color: Colors.black, fontSize: 16),
+            items: personalities.map((String personality) {
+              return DropdownMenuItem<String>(
+                value: personality,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(personality),
+                ),
+              );
+            }).toList(),
+            onChanged: viewModel.onPersonalityChanged,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildNextButton(SplashViewModel viewModel) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 50),
@@ -141,7 +240,7 @@ class SplashView extends StackedView<SplashViewModel> {
           onPressed: viewModel.canProceed ? viewModel.navigateToNext : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF14932C),
-            disabledBackgroundColor: const Color(0xFF14932C),
+            disabledBackgroundColor: const Color(0xFF14932C).withOpacity(0.5),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
             ),
