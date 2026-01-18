@@ -27,9 +27,6 @@ class _MainLayoutState extends State<MainLayout> {
             child: Text("Chat Page", style: TextStyle(color: Colors.white)),
           ),
           Center(
-            child: Text("Chat Page"),
-          ),
-          Center(
             child: SettingsView(),
           ),
         ],

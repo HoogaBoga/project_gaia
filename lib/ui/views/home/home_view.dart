@@ -28,19 +28,18 @@ class _HomeContent extends StatefulWidget {
 
 class _HomeContentState extends State<_HomeContent>
     with SingleTickerProviderStateMixin {
-  
   // Adjusted duration to 2.5s to allow text to fade in AFTER earth lands
   static const Duration _totalDuration = Duration(milliseconds: 2500);
-  
+
   static const Color _bgColor = Color(0xFF0A2342);
   static const Color _layerColor = Color(0xFF0F3057);
   static const Color _hpRed = Color(0xFFEF5350);
   static const Color _textWhite = Colors.white;
 
   late AnimationController _controller;
-  late Animation<double> _layer1Anim; 
-  late Animation<double> _layer2Anim; 
-  late Animation<double> _layer3Anim; 
+  late Animation<double> _layer1Anim;
+  late Animation<double> _layer2Anim;
+  late Animation<double> _layer3Anim;
   late Animation<double> _plantAnim;
   late Animation<double> _textOpacityAnim; // New animation for text
 
@@ -104,26 +103,28 @@ class _HomeContentState extends State<_HomeContent>
             children: [
               _buildBackgroundLayer(
                 screenWidth: screenWidth,
-                currentTop: _lerpY(screenHeight, widget.viewModel.layer1TargetY, _layer1Anim.value),
+                currentTop: _lerpY(screenHeight, widget.viewModel.layer1TargetY,
+                    _layer1Anim.value),
                 opacity: 0.4,
               ),
               _buildBackgroundLayer(
                 screenWidth: screenWidth,
-                currentTop: _lerpY(screenHeight, widget.viewModel.layer2TargetY, _layer2Anim.value),
+                currentTop: _lerpY(screenHeight, widget.viewModel.layer2TargetY,
+                    _layer2Anim.value),
                 opacity: 0.6,
               ),
               _buildBackgroundLayer(
                 screenWidth: screenWidth,
-                currentTop: _lerpY(screenHeight, widget.viewModel.layer3TargetY, _layer3Anim.value),
+                currentTop: _lerpY(screenHeight, widget.viewModel.layer3TargetY,
+                    _layer3Anim.value),
                 opacity: 0.8,
               ),
-
               SafeArea(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const SizedBox(height: 20),
-                    
+
                     // --- Wrapped Text & HP Bar in FadeTransition ---
                     FadeTransition(
                       opacity: _textOpacityAnim,
@@ -149,8 +150,10 @@ class _HomeContentState extends State<_HomeContent>
                           ),
                           const SizedBox(height: 25),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 40.0),
-                            child: _buildHpBar(widget.viewModel.currentHpPercent),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 40.0),
+                            child:
+                                _buildHpBar(widget.viewModel.currentHpPercent),
                           ),
                         ],
                       ),
@@ -160,11 +163,11 @@ class _HomeContentState extends State<_HomeContent>
                       child: Transform.translate(
                         offset: Offset(0, 200 * (1 - _plantAnim.value)),
                         child: Opacity(
-                          opacity: _plantAnim.value.clamp(0.0, 1.0), 
+                          opacity: _plantAnim.value.clamp(0.0, 1.0),
                           child: Align(
                             alignment: Alignment.bottomCenter,
                             child: Image.asset(
-                              'assets/images/earf 1.png', 
+                              'assets/images/earf 1.png',
                               fit: BoxFit.contain,
                               alignment: Alignment.bottomCenter,
                             ),
