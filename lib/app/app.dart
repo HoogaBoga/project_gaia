@@ -10,6 +10,7 @@ import 'package:project_gaia/ui/views/splash/splash_viewmodel.dart';
 
 import 'package:project_gaia/ui/views/edit_plant/edit_plant_view.dart';
 import 'package:project_gaia/ui/dialogs/delete_plant/delete_plant_dialog.dart';
+import 'package:project_gaia/services/firebase_service.dart';
 // @stacked-import
 
 @StackedApp(
@@ -25,6 +26,7 @@ import 'package:project_gaia/ui/dialogs/delete_plant/delete_plant_dialog.dart';
     LazySingleton(classType: BottomSheetService),
     LazySingleton(classType: DialogService),
     LazySingleton(classType: NavigationService),
+    LazySingleton(classType: FirebaseService),
     // @stacked-service
   ],
   bottomsheets: [

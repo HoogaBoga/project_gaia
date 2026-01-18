@@ -5,9 +5,17 @@ import 'package:project_gaia/app/app.locator.dart';
 import 'package:project_gaia/app/app.router.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:project_gaia/firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   await setupLocator();
   setupDialogUi();
   setupBottomSheetUi();
