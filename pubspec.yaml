@@ -17,6 +17,7 @@ dependencies:
   flutter_arc_text: ^0.6.0
   google_fonts: ^6.1.0
   http: ^1.6.0
+  firebase_core: ^4.3.0
 dev_dependencies:
   build_runner: ^2.4.5
   flutter_test:
