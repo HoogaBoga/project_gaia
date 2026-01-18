@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'home_viewmodel.dart';
-
+import 'package:project_gaia/ui/widgets/notification/notification_overlay.dart';
+ 
 class HomeView extends StackedView<HomeViewModel> {
   const HomeView({Key? key}) : super(key: key);
 
@@ -29,7 +30,6 @@ class _HomeContent extends StatefulWidget {
 class _HomeContentState extends State<_HomeContent>
     with SingleTickerProviderStateMixin {
   
-  // Adjusted duration to 2.5s to allow text to fade in AFTER earth lands
   static const Duration _totalDuration = Duration(milliseconds: 2500);
   
   static const Color _bgColor = Color(0xFF0A2342);
@@ -42,17 +42,15 @@ class _HomeContentState extends State<_HomeContent>
   late Animation<double> _layer2Anim; 
   late Animation<double> _layer3Anim; 
   late Animation<double> _plantAnim;
-  late Animation<double> _textOpacityAnim; // New animation for text
+  late Animation<double> _textOpacityAnim; 
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: _totalDuration);
 
-    // Keeping your custom curve
     const Curve smoothCurve = Cubic(0.17, 0.66, 0.34, .97);
 
-    // 1. Background Layers (Compressed to finish around 0.5-0.6)
     _layer1Anim = CurvedAnimation(
       parent: _controller,
       curve: const Interval(0.0, 0.5, curve: smoothCurve),
@@ -68,14 +66,11 @@ class _HomeContentState extends State<_HomeContent>
       curve: const Interval(0.1, 0.6, curve: smoothCurve),
     );
 
-    // 2. Plant Animation (Starts at 0.2, Finishes at 0.7)
-    // This ensures the plant is fully settled before the text starts
     _plantAnim = CurvedAnimation(
       parent: _controller,
       curve: const Interval(0.2, 0.7, curve: Curves.easeInOutCubic),
     );
 
-    // 3. Text Opacity (Starts at 0.75, after plant is done)
     _textOpacityAnim = CurvedAnimation(
       parent: _controller,
       curve: const Interval(0.75, 1.0, curve: Curves.easeIn),
@@ -102,6 +97,7 @@ class _HomeContentState extends State<_HomeContent>
         builder: (context, child) {
           return Stack(
             children: [
+              // --- Background Layers ---
               _buildBackgroundLayer(
                 screenWidth: screenWidth,
                 currentTop: _lerpY(screenHeight, widget.viewModel.layer1TargetY, _layer1Anim.value),
@@ -118,13 +114,13 @@ class _HomeContentState extends State<_HomeContent>
                 opacity: 0.8,
               ),
 
+              // --- Main Content ---
               SafeArea(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const SizedBox(height: 20),
                     
-                    // --- Wrapped Text & HP Bar in FadeTransition ---
                     FadeTransition(
                       opacity: _textOpacityAnim,
                       child: Column(
@@ -175,6 +171,45 @@ class _HomeContentState extends State<_HomeContent>
                   ],
                 ),
               ),
+
+              // --- NOTIFICATION WIDGETS ---
+
+              // 1. Bell Button
+              Positioned(
+                top: 50,
+                right: 24,
+                child: GestureDetector(
+                  // Assume viewModel has this method
+                  onTap: widget.viewModel.toggleNotifications, 
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.notifications_outlined,
+                      color: Color(0xFFa2e364),
+                      size: 28,
+                    ),
+                  ),
+                ),
+              ),
+
+              // 2. Overlay Container
+              if (widget.viewModel.showNotificationsOverlay)
+                Positioned(
+                  top: 110,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    // Now we pass the list of models from the ViewModel
+                    child: NotificationsOverlayContainer(
+                      notifications: widget.viewModel.notifications, 
+                      onClearTapped: widget.viewModel.clearNotifications,
+                    ),
+                  ),
+                ),
             ],
           );
         },
