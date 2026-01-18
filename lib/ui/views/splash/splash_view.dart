@@ -6,14 +6,14 @@ class SplashView extends StackedView<SplashViewModel> {
   const SplashView({Key? key}) : super(key: key);
 
   @override
-  Widget builder(BuildContext context, SplashViewModel viewModel, Widget? child) {
+  Widget builder(
+      BuildContext context, SplashViewModel viewModel, Widget? child) {
     return Scaffold(
       backgroundColor: const Color(0xFF02213F),
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           _buildVibrantBackground(context),
-
           Positioned(
             bottom: 0,
             left: 0,
@@ -26,7 +26,6 @@ class SplashView extends StackedView<SplashViewModel> {
               alignment: Alignment.bottomCenter,
             ),
           ),
-
           SafeArea(
             child: Column(
               children: [
@@ -80,13 +79,15 @@ class SplashView extends StackedView<SplashViewModel> {
     String headerText;
     switch (viewModel.currentStep) {
       case OnboardingStep.plantSpecies:
-        headerText = 'To begin, take an image of your plant or manually enter the plant species!';
+        headerText =
+            'To begin, take an image of your plant or manually enter the plant species!';
         break;
       case OnboardingStep.plantName:
         headerText = 'What would you like to name your plant?';
         break;
       case OnboardingStep.plantPersonality:
-        headerText = 'What type of personality would you like your plant to have?';
+        headerText =
+            'What type of personality would you like your plant to have?';
         break;
     }
 

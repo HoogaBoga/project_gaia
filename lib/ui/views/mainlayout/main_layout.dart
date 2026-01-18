@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project_gaia/ui/views/chat/chat_view.dart';
 import 'package:project_gaia/ui/views/stats/stats_page_view.dart';
 import 'package:project_gaia/ui/widgets/bottom_navbar.dart';
 import 'package:project_gaia/ui/views/home/home_view.dart';
@@ -23,12 +24,7 @@ class _MainLayoutState extends State<MainLayout> {
         children: const [
           HomeView(),
           StatsPageView(),
-          Center(
-            child: Text("Chat Page", style: TextStyle(color: Colors.white)),
-          ),
-          Center(
-            child: Text("Chat Page"),
-          ),
+          ChatView(),
           Center(
             child: SettingsView(),
           ),

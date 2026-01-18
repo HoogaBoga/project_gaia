@@ -16,7 +16,7 @@ class SplashViewModel extends BaseViewModel {
   final _imagePicker = ImagePicker();
   final plantSpeciesController = TextEditingController();
   final plantNameController = TextEditingController();
-  
+
   OnboardingStep _currentStep = OnboardingStep.plantSpecies;
   String _plantSpecies = '';
   String _plantName = '';

@@ -8,6 +8,8 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:project_gaia/ui/views/splash/splash_view.dart';
 import 'package:project_gaia/ui/views/splash/splash_viewmodel.dart';
 
+import 'package:project_gaia/ui/views/edit_plant/edit_plant_view.dart';
+import 'package:project_gaia/ui/dialogs/delete_plant/delete_plant_dialog.dart';
 // @stacked-import
 
 @StackedApp(
@@ -15,8 +17,9 @@ import 'package:project_gaia/ui/views/splash/splash_viewmodel.dart';
     MaterialRoute(page: HomeView),
     MaterialRoute(page: StartupView),
     MaterialRoute(page: SplashView),
-    MaterialRoute(page: MainLayout, initial: true)
-    // @stacked-route
+    MaterialRoute(page: MainLayout, initial: true),
+    MaterialRoute(page: EditPlantView),
+// @stacked-route
   ],
   dependencies: [
     LazySingleton(classType: BottomSheetService),
@@ -30,7 +33,8 @@ import 'package:project_gaia/ui/views/splash/splash_viewmodel.dart';
   ],
   dialogs: [
     StackedDialog(classType: InfoAlertDialog),
-    // @stacked-dialog
+    StackedDialog(classType: DeletePlantDialog),
+// @stacked-dialog
   ],
 )
 class App {}
