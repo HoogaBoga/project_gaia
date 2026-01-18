@@ -48,6 +48,15 @@ class SettingsView extends StackedView<SettingsViewModel> {
                       ),
                     ),
                     const Text(
+                      "Species",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 20,
+                        color: Color(0xFF7D7D7D),
+                      ),
+                    ),
+
+                    const Text(
                       "Personality sa plant",
                       style: TextStyle(
                         fontWeight: FontWeight.w500,
@@ -59,7 +68,8 @@ class SettingsView extends StackedView<SettingsViewModel> {
                     _buildMenuButton(
                       label: 'Edit plant information',
                       icon: const ImageIcon(
-                        AssetImage('assets/images/edit_plant_information_icon.png'),
+                        AssetImage(
+                            'assets/images/edit_plant_information_icon.png'),
                         color: Color(0xFF14932C),
                         size: 30.0,
                       ),
@@ -68,8 +78,9 @@ class SettingsView extends StackedView<SettingsViewModel> {
                     const SizedBox(height: 22.5),
                     _buildMenuButton(
                       label: 'Delete plant',
-                      icon: const Icon(Icons.delete, size: 38, color: Colors.red),
-                      onPressed: viewModel.navigateToDeletePlant,
+                      icon:
+                          const Icon(Icons.delete, size: 38, color: Colors.red),
+                      onPressed: viewModel.openDeletePlantDialog,
                     ),
                   ],
                 ),
@@ -119,10 +130,14 @@ class SettingsView extends StackedView<SettingsViewModel> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        _buildSphere(baseWidth * 2.8, const Color(0xFF02213F), top: -baseWidth * 0.2),
-        _buildSphere(baseWidth * 2.2, const Color(0xFF022D48), top: baseWidth * 0.1),
-        _buildSphere(baseWidth * 1.6, const Color(0xFF083A5B), top: baseWidth * 0.4),
-        _buildSphere(baseWidth * 1.2, const Color(0xFF143F80), top: baseWidth * 0.7),
+        _buildSphere(baseWidth * 2.8, const Color(0xFF02213F),
+            top: -baseWidth * 0.2),
+        _buildSphere(baseWidth * 2.2, const Color(0xFF022D48),
+            top: baseWidth * 0.1),
+        _buildSphere(baseWidth * 1.6, const Color(0xFF083A5B),
+            top: baseWidth * 0.4),
+        _buildSphere(baseWidth * 1.4, const Color(0xFF143F80),
+            top: baseWidth * 0.7),
       ],
     );
   }
@@ -149,5 +164,6 @@ class SettingsView extends StackedView<SettingsViewModel> {
   }
 
   @override
-  SettingsViewModel viewModelBuilder(BuildContext context) => SettingsViewModel();
+  SettingsViewModel viewModelBuilder(BuildContext context) =>
+      SettingsViewModel();
 }
