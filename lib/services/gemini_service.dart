@@ -6,7 +6,7 @@ class GeminiService {
   static const String _baseUrl =
       'https://generativelanguage.googleapis.com/v1beta/models';
   static const String _model =
-      'gemini-2.5-flash-lite'; // or gemini-3-pro-preview ??
+      'gemini-3-flash-preview'; //change this to try other models
 
   final String apiKey;
 
