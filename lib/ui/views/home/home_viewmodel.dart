@@ -1,18 +1,36 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:project_gaia/app/app.locator.dart';
 import 'package:stacked/stacked.dart';
 import 'package:project_gaia/ui/widgets/notification/notification_item_model.dart';
+import 'package:project_gaia/services/firebase_service.dart';
+import 'package:project_gaia/services/gemini_service.dart';
 
 class HomeViewModel extends BaseViewModel {
   final String plantName = 'Gaia';
   final String plantSpecies = 'Ficus pseudopalma';
 
   double currentHpPercent = 0.65;
+  double waterLevel = 0.0;
 
   double layer1TargetY = 80.0;
   double layer2TargetY = 250.0;
   double layer3TargetY = 420.0;
 
+  bool isDevMode =
+      true; //so that the api wont be called over and over and get my money huhu
+
   // --- NEW CODE START ---
+
+  final _firebaseService = locator<FirebaseService>();
+  final _geminiService = GeminiService();
+  StreamSubscription? _sensorSubscription;
+
+  Uint8List? plantImageBytes;
+  bool isGeneratingImage = false;
+  String _lastVisualState = "";
 
   // 1. State for controlling the overlay visibility
   bool _showNotificationsOverlay = false;
@@ -50,9 +68,75 @@ class HomeViewModel extends BaseViewModel {
     notifyListeners();
   }
 
+  Future<void> _updateDigitalTwin() async {
+    if (isDevMode) {
+      print("🚧 DEV MODE: Skipping AI Generation to save money.");
+      return;
+    }
+    String currentZone = _getHealthZone(currentHpPercent);
+
+    if (currentZone == _lastVisualState && plantImageBytes != null) return;
+
+    isGeneratingImage = true;
+    notifyListeners();
+
+    print("Zone changed to $currentZone. Generating new Twin...");
+
+    String prompt = _buildPrompt(currentZone);
+
+    final newImage = await _geminiService.generateImage(prompt);
+
+    if (newImage != null) {
+      plantImageBytes = newImage;
+      _lastVisualState = currentZone;
+    }
+
+    isGeneratingImage = false;
+    notifyListeners();
+  }
+
+  String _getHealthZone(double health) {
+    if (health >= 0.8) return "perfect";
+    if (health >= 0.4) return "warning";
+    return "critical";
+  }
+
+  String _buildPrompt(String zone) {
+    String visual = "";
+    switch (zone) {
+      case "perfect":
+        visual = "glowing neon green, vibrant, upright, floating spores";
+        break;
+      case "warning":
+        visual = "slightly drooping, matte texture, yellow edges";
+        break;
+      case "critical":
+        visual = "withered, brown crispy leaves, drooping, red warning lights";
+        break;
+    }
+
+    return "A 3D render of a $plantSpecies plant in a pot. The plant is $visual. Isometric view, dark blue background";
+  }
+
   // --- NEW CODE END ---
 
   void initialise() {
+    setBusy(true);
+
+    _sensorSubscription = _firebaseService.getSensorDataStream().listen((data) {
+      waterLevel = (data['water'] as num).toDouble();
+      double humidity = (data['humidity'] as num).toDouble();
+      double sunlight = (data['sunlight'] as num).toDouble();
+      double temp = (data['temperature'] as num).toDouble();
+
+      currentHpPercent = (waterLevel + humidity + sunlight + temp) / 4;
+
+      _updateDigitalTwin();
+
+      notifyListeners();
+    });
+
+    setBusy(false);
     notifyListeners();
   }
 }
