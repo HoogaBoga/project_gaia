@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'home_viewmodel.dart';
 import 'package:project_gaia/ui/widgets/notification/notification_overlay.dart';
- 
+
 class HomeView extends StackedView<HomeViewModel> {
   const HomeView({Key? key}) : super(key: key);
 
@@ -13,6 +13,11 @@ class HomeView extends StackedView<HomeViewModel> {
     Widget? child,
   ) {
     return _HomeContent(viewModel: viewModel);
+  }
+
+  @override
+  void onViewModelReady(HomeViewModel viewModel) {
+    viewModel.initialise();
   }
 
   @override
@@ -29,7 +34,6 @@ class _HomeContent extends StatefulWidget {
 
 class _HomeContentState extends State<_HomeContent>
     with SingleTickerProviderStateMixin {
-  
   // Adjusted duration to 2.5s to allow text to fade in AFTER earth lands
   static const Duration _totalDuration = Duration(milliseconds: 2500);
 
@@ -43,7 +47,7 @@ class _HomeContentState extends State<_HomeContent>
   late Animation<double> _layer2Anim;
   late Animation<double> _layer3Anim;
   late Animation<double> _plantAnim;
-  late Animation<double> _textOpacityAnim; 
+  late Animation<double> _textOpacityAnim;
 
   @override
   void initState() {
@@ -124,7 +128,6 @@ class _HomeContentState extends State<_HomeContent>
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const SizedBox(height: 20),
-                    
 
                     // --- Wrapped Text & HP Bar in FadeTransition ---
                     FadeTransition(
@@ -165,14 +168,53 @@ class _HomeContentState extends State<_HomeContent>
                         offset: Offset(0, 200 * (1 - _plantAnim.value)),
                         child: Opacity(
                           opacity: _plantAnim.value.clamp(0.0, 1.0),
-                          child: Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Image.asset(
-                              'assets/images/earf 1.png',
-                              fit: BoxFit.contain,
+                          child: Stack(
                               alignment: Alignment.bottomCenter,
-                            ),
-                          ),
+                              clipBehavior: Clip.none,
+                              children: [
+                                Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: Image.asset(
+                                    'assets/images/earf 1.png',
+                                    fit: BoxFit.contain,
+                                    alignment: Alignment.bottomCenter,
+                                  ),
+                                ),
+                                Positioned(
+                                    bottom: screenHeight * 0.25,
+                                    child: widget.viewModel.plantImageBytes !=
+                                            null
+                                        ? Container(
+                                            height: 280,
+                                            width: 280,
+                                            decoration:
+                                                BoxDecoration(boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withValues(alpha: 0.4),
+                                                blurRadius: 30,
+                                                offset: const Offset(0, 10),
+                                              )
+                                            ]),
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(24.0),
+                                              child: Image.memory(
+                                                  widget.viewModel
+                                                      .plantImageBytes!,
+                                                  fit: BoxFit.contain),
+                                            ))
+                                        : widget.viewModel.isGeneratingImage
+                                            ? const SizedBox(
+                                                height: 50,
+                                                width: 50,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                        color:
+                                                            Colors.greenAccent),
+                                              )
+                                            : const SizedBox())
+                              ]),
                         ),
                       ),
                     ),
@@ -188,7 +230,7 @@ class _HomeContentState extends State<_HomeContent>
                 right: 24,
                 child: GestureDetector(
                   // Assume viewModel has this method
-                  onTap: widget.viewModel.toggleNotifications, 
+                  onTap: widget.viewModel.toggleNotifications,
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: const BoxDecoration(
@@ -213,7 +255,7 @@ class _HomeContentState extends State<_HomeContent>
                   child: Center(
                     // Now we pass the list of models from the ViewModel
                     child: NotificationsOverlayContainer(
-                      notifications: widget.viewModel.notifications, 
+                      notifications: widget.viewModel.notifications,
                       onClearTapped: widget.viewModel.clearNotifications,
                     ),
                   ),
