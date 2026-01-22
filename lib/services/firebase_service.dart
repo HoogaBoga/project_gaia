@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 class FirebaseService {
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref();
 
-  //save plant data(specie,name,personality)
+  // Save plant data
   Future<void> savePlantProfile({
     required String species,
     required String name,
@@ -23,7 +23,7 @@ class FirebaseService {
     }
   }
 
-  // Stream for real-time sensor data from plants/gaia_01
+  // Stream for real-time sensor data
   Stream<Map<String, dynamic>> getSensorDataStream() {
     return _databaseRef.child('plants/gaia_01').onValue.map((event) {
       if (event.snapshot.value != null) {
@@ -54,45 +54,54 @@ class FirebaseService {
     }
   }
 
-  // Convert ESP32 raw data to normalized 0-1 scale
+  // --- FIX: Preserves Profile & Correctly Normalizes ---
   Map<String, dynamic> _convertToNormalizedData(Map<dynamic, dynamic> data) {
-    // soil_moisture: 0-4095 (higher = drier, so we invert)
-    // soil_raw is the raw ADC value (4095 = dry, 0 = wet)
+    // 1. Extract Raw Values
     final soilRaw = _parseDouble(data['soil_raw'] ?? 4095);
-    final soilMoisture = _parseDouble(data['soil_moisture'] ?? 0);
+    // Some sensors send soil_moisture as 0-100, others as raw ADC. 
+    // We'll trust your logic here but ensure we capture the raw value for AI.
+    final soilMoistureRaw = _parseDouble(data['soil_moisture'] ?? 0); 
+    
+    // 2. Normalize (0.0 to 1.0) for UI Progress Bars
+    // Invert logic: 4095 is dry (0.0), 0 is wet (1.0)
+    final waterLevel = soilRaw > 0 
+        ? (1 - (soilRaw / 4095)).clamp(0.0, 1.0) 
+        : (soilMoistureRaw / 100).clamp(0.0, 1.0);
 
-    // Convert soil moisture: invert so 0 (dry) becomes low, wet becomes high
-    // Assuming dry = 4095, wet = 0-1500 range
-    final waterLevel =
-        soilRaw > 0 ? (1 - (soilRaw / 4095)).clamp(0.0, 1.0) : soilMoisture;
+    final humidityRaw = _parseDouble(data['humidity'] ?? 0);
+    final humidity = (humidityRaw / 100).clamp(0.0, 1.0);
 
-    // humidity: typically 0-100%, convert to 0-1
-    final humidity =
-        (_parseDouble(data['humidity'] ?? 0) / 100).clamp(0.0, 1.0);
+    final tempRaw = _parseDouble(data['temperature'] ?? 0);
+    // Assuming comfortable range 15-35°C for the progress bar visual
+    final temperatureLevel = ((tempRaw - 15) / 20).clamp(0.0, 1.0);
 
-    // temperature: 0-50°C range, convert to 0-1 (assuming comfortable range is 15-35°C)
-    final temp = _parseDouble(data['temperature'] ?? 0);
-    final temperatureLevel = ((temp - 15) / 20).clamp(0.0, 1.0);
-
-    // sunlight: not in current data, using default 0.5 or you can add light sensor
     final sunlight = _parseDouble(data['sunlight'] ?? 0.5);
 
     return {
+      // VISUAL DATA (0.0 - 1.0)
       'water': waterLevel,
       'humidity': humidity,
       'sunlight': sunlight,
       'temperature': temperatureLevel,
+      
+      // META DATA
       'timestamp': data['timestamp'] ?? DateTime.now().millisecondsSinceEpoch,
+      
+      // *** CRITICAL FIX: PASS THE PROFILE THROUGH ***
+      'profile': data['profile'], 
+
+      // RAW DATA (For AI Analysis)
       'raw_data': {
+        'soil_moisture': soilMoistureRaw, 
         'soil_raw': soilRaw,
-        'soil_moisture': soilMoisture,
-        'humidity_raw': _parseDouble(data['humidity'] ?? 0),
-        'temperature_raw': temp,
+        'humidity': humidityRaw,
+        'temperature': tempRaw,
+        'sunlight': sunlight,
       }
     };
   }
 
-  // Update sensor data (for ESP32 to call)
+  // Update sensor data (for ESP32 simulation)
   Future<void> updateSensorData({
     required double water,
     required double humidity,
@@ -100,8 +109,8 @@ class FirebaseService {
     required double temperature,
   }) async {
     try {
-      await _databaseRef.child('sensorData').set({
-        'water': water,
+      await _databaseRef.child('plants/gaia_01').update({
+        'soil_moisture': water,
         'humidity': humidity,
         'sunlight': sunlight,
         'temperature': temperature,
@@ -112,7 +121,6 @@ class FirebaseService {
     }
   }
 
-  // Helper method to parse double values
   double _parseDouble(dynamic value) {
     if (value is double) return value;
     if (value is int) return value.toDouble();
@@ -120,7 +128,6 @@ class FirebaseService {
     return 0.0;
   }
 
-  // Default sensor data when no data is available
   Map<String, dynamic> _getDefaultSensorData() {
     return {
       'water': 0.0,
@@ -128,11 +135,11 @@ class FirebaseService {
       'sunlight': 0.0,
       'temperature': 0.0,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
+      'raw_data': {
+        'soil_moisture': 0.0,
+        'humidity': 0.0,
+        'temperature': 0.0,
+      }
     };
-  }
-
-  // Dispose method if needed for cleanup
-  void dispose() {
-    // Clean up any listeners if necessary
   }
 }

@@ -7,92 +7,187 @@ import 'package:stacked/stacked.dart';
 import 'package:project_gaia/ui/widgets/notification/notification_item_model.dart';
 import 'package:project_gaia/services/firebase_service.dart';
 import 'package:project_gaia/services/gemini_service.dart';
+import 'package:project_gaia/services/gemini_notification_service.dart';
 
 class HomeViewModel extends BaseViewModel {
-  final String plantName = 'Gaia';
-  final String plantSpecies = 'Ficus pseudopalma';
-
-  double currentHpPercent = 0.65;
+  // Safe Defaults
+  String plantName = 'Gaia'; 
+  String plantSpecies = 'Waiting for data...';
+  
+  // Default HP
+  double currentHpPercent = 0.5; 
+  
+  // Visual Levels (0.0 - 1.0)
   double waterLevel = 0.0;
+  double humidity = 0.0;
+  double sunlight = 0.0;
+  double temp = 0.0;
+  
+  // Raw Values for AI
+  double _rawTemp = 0.0;
+  double _rawHumidity = 0.0;
+  double _rawSoil = 0.0;
 
   double layer1TargetY = 80.0;
   double layer2TargetY = 250.0;
   double layer3TargetY = 420.0;
 
-  bool isDevMode =
-      true; //so that the api wont be called over and over and get my money huhu
-
-  // --- NEW CODE START ---
+  // ⚠️ SAVING CREDITS: Set to TRUE by default. Change to FALSE to test AI.
+  bool isDevMode = true; 
 
   final _firebaseService = locator<FirebaseService>();
   final _geminiService = GeminiService();
+  final _notificationService = GeminiNotificationService();
+  
   StreamSubscription? _sensorSubscription;
+  DateTime? _lastAiCheckTime;
 
   Uint8List? plantImageBytes;
   bool isGeneratingImage = false;
   String _lastVisualState = "";
 
-  // 1. State for controlling the overlay visibility
+  // Notifications
   bool _showNotificationsOverlay = false;
   bool get showNotificationsOverlay => _showNotificationsOverlay;
 
-  // 2. The data list for your notifications
-  List<NotificationModel> _notifications = [
-    NotificationModel(
-      icon: Icons.water_drop,
-      iconColor: Colors.blue,
-      title: "You forgot to water me :(",
-      time: "10:00AM",
-    ),
-    NotificationModel(
-      icon: Icons.wb_sunny_rounded,
-      iconColor: Colors.amber,
-      title: "I need more sunlight sir...",
-      time: "11:00AM",
-    ),
-  ];
-
-  // Getter to expose the list to the View
+  List<NotificationModel> _notifications = [];
   List<NotificationModel> get notifications => _notifications;
 
-  // 3. Logic to toggle visibility (attached to the Bell Icon)
   void toggleNotifications() {
     _showNotificationsOverlay = !_showNotificationsOverlay;
-    notifyListeners(); // This tells the UI to rebuild
+    notifyListeners();
   }
 
-  // 4. Logic to clear notifications (attached to the Clear button)
   void clearNotifications() {
     _notifications.clear();
-    _showNotificationsOverlay = false; // Optionally close the overlay
+    _showNotificationsOverlay = false;
     notifyListeners();
+  }
+
+  void initialise() {
+    _sensorSubscription = _firebaseService.getSensorDataStream().listen((data) {
+      if (data.isEmpty) return;
+
+      // --- 1. NAME & SPECIES FIX ---
+      if (data['profile'] != null) {
+        try {
+          final profile = data['profile'];
+          plantName = profile['name']?.toString() ?? 'Gaia';
+          plantSpecies = profile['species']?.toString() ?? 'Unknown Species';
+        } catch (e) {
+          print("Error parsing profile: $e");
+        }
+      }
+
+      // --- 2. VISUAL DATA FIX (Already Normalized 0-1) ---
+      waterLevel = (data['water'] as num?)?.toDouble() ?? 0.0;
+      humidity = (data['humidity'] as num?)?.toDouble() ?? 0.0;
+      temp = (data['temperature'] as num?)?.toDouble() ?? 0.0;
+      sunlight = (data['sunlight'] as num?)?.toDouble() ?? 0.0;
+
+      // --- 3. RAW DATA extraction (For AI) ---
+      if (data['raw_data'] != null) {
+        final raw = data['raw_data'];
+        _rawSoil = (raw['soil_moisture'] as num?)?.toDouble() ?? 0.0;
+        _rawHumidity = (raw['humidity'] as num?)?.toDouble() ?? 0.0;
+        _rawTemp = (raw['temperature'] as num?)?.toDouble() ?? 0.0;
+      }
+
+      // --- 4. HEALTH BAR FIX ---
+      // Do NOT divide by 100 here. The service already gave us 0.0-1.0
+      currentHpPercent = (waterLevel + humidity) / 2;
+      currentHpPercent = currentHpPercent.clamp(0.0, 1.0);
+
+      notifyListeners(); 
+
+      // Trigger AI (only if not dev mode)
+      if (!isDevMode) {
+        _updateDigitalTwin();
+        _checkPlantNeedsWithAI();
+      }
+    });
+  }
+
+  /// AI Logic 
+  Future<void> _checkPlantNeedsWithAI() async {
+    // 15-min Throttle
+    if (_lastAiCheckTime != null && 
+        DateTime.now().difference(_lastAiCheckTime!) < const Duration(minutes: 15)) {
+      return;
+    }
+
+    try {
+      // We pass the RAW values to the AI so it knows "35°C" vs "20°C"
+      // instead of just "0.8" which is meaningless to it.
+      final alerts = await _notificationService.analyzePlantNeeds(
+        species: plantSpecies,
+        temp: _rawTemp, 
+        humidity: _rawHumidity,
+        soilMoisture: _rawSoil,
+        sunlight: sunlight, // Sunlight usually has no unit in this setup
+      );
+
+      if (alerts.isNotEmpty) {
+        _notifications.clear();
+        for (var alert in alerts) {
+          _notifications.add(NotificationModel(
+            icon: _mapIcon(alert['type']),
+            iconColor: _mapColor(alert['type']),
+            title: alert['title'] ?? "Alert",
+            time: "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}",
+          ));
+        }
+        _showNotificationsOverlay = true;
+        notifyListeners();
+      }
+      _lastAiCheckTime = DateTime.now();
+    } catch (e) {
+      print("AI Error: $e");
+    }
+  }
+
+  // ... (Keep existing _mapIcon, _mapColor, _updateDigitalTwin helpers) ...
+  
+  IconData _mapIcon(String? type) {
+    switch (type) {
+      case 'water': return Icons.water_drop;
+      case 'sun': return Icons.wb_sunny;
+      case 'temp': return Icons.thermostat;
+      case 'humidity': return Icons.cloud;
+      default: return Icons.notifications;
+    }
+  }
+
+  Color _mapColor(String? type) {
+    switch (type) {
+      case 'water': return Colors.blue;
+      case 'sun': return Colors.amber;
+      case 'temp': return Colors.red;
+      default: return Colors.green;
+    }
   }
 
   Future<void> _updateDigitalTwin() async {
-    if (isDevMode) {
-      print("🚧 DEV MODE: Skipping AI Generation to save money.");
-      return;
-    }
     String currentZone = _getHealthZone(currentHpPercent);
-
     if (currentZone == _lastVisualState && plantImageBytes != null) return;
 
-    isGeneratingImage = true;
-    notifyListeners();
+    try {
+      isGeneratingImage = true;
+      notifyListeners();
 
-    print("Zone changed to $currentZone. Generating new Twin...");
+      String prompt = _buildPrompt(currentZone);
+      final newImage = await _geminiService.generateImage(prompt);
 
-    String prompt = _buildPrompt(currentZone);
-
-    final newImage = await _geminiService.generateImage(prompt);
-
-    if (newImage != null) {
-      plantImageBytes = newImage;
-      _lastVisualState = currentZone;
+      if (newImage != null) {
+        plantImageBytes = newImage;
+        _lastVisualState = currentZone;
+      }
+    } catch (e) {
+      print("Image Gen Error: $e");
+    } finally {
+      isGeneratingImage = false;
+      notifyListeners();
     }
-
-    isGeneratingImage = false;
-    notifyListeners();
   }
 
   String _getHealthZone(double health) {
@@ -104,39 +199,16 @@ class HomeViewModel extends BaseViewModel {
   String _buildPrompt(String zone) {
     String visual = "";
     switch (zone) {
-      case "perfect":
-        visual = "glowing neon green, vibrant, upright, floating spores";
-        break;
-      case "warning":
-        visual = "slightly drooping, matte texture, yellow edges";
-        break;
-      case "critical":
-        visual = "withered, brown crispy leaves, drooping, red warning lights";
-        break;
+      case "perfect": visual = "glowing neon green, vibrant"; break;
+      case "warning": visual = "slightly drooping, yellow edges"; break;
+      case "critical": visual = "withered, brown leaves"; break;
     }
-
-    return "A 3D render of a $plantSpecies plant in a pot. The plant is $visual. Isometric view, dark blue background";
+    return "3D render of $plantSpecies, $visual, isometric view.";
   }
 
-  // --- NEW CODE END ---
-
-  void initialise() {
-    setBusy(true);
-
-    _sensorSubscription = _firebaseService.getSensorDataStream().listen((data) {
-      waterLevel = (data['water'] as num).toDouble();
-      double humidity = (data['humidity'] as num).toDouble();
-      double sunlight = (data['sunlight'] as num).toDouble();
-      double temp = (data['temperature'] as num).toDouble();
-
-      currentHpPercent = (waterLevel + humidity + sunlight + temp) / 4;
-
-      _updateDigitalTwin();
-
-      notifyListeners();
-    });
-
-    setBusy(false);
-    notifyListeners();
+  @override
+  void dispose() {
+    _sensorSubscription?.cancel();
+    super.dispose();
   }
 }
