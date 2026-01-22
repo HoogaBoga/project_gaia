@@ -38,13 +38,15 @@ class EditPlantView extends StackedView<EditPlantViewModel> {
                             onPressed: () => Navigator.of(context).pop(),
                           ),
                           const Expanded(
-                            child:const Text(
+                            child: Text(
                               "Edit Plant Information",
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 32,
                                 color: Colors.white,
                               ),
+                              overflow: TextOverflow.visible,
+                              softWrap: true,
                             ),
                           ),
                         ],
