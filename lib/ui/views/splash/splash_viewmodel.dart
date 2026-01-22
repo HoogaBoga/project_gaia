@@ -4,6 +4,8 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:project_gaia/app/app.locator.dart';
 import 'package:project_gaia/app/app.router.dart';
+import 'package:project_gaia/gemini_service.dart';
+import 'package:project_gaia/services/firebase_service.dart';
 
 enum OnboardingStep {
   plantSpecies,
@@ -14,6 +16,8 @@ enum OnboardingStep {
 class SplashViewModel extends BaseViewModel {
   final _navigationService = locator<NavigationService>();
   final _imagePicker = ImagePicker();
+  final _firebaseService = locator<FirebaseService>();
+  
   final plantSpeciesController = TextEditingController();
   final plantNameController = TextEditingController();
 
@@ -21,18 +25,16 @@ class SplashViewModel extends BaseViewModel {
   String _plantSpecies = '';
   String _plantName = '';
   String? _plantPersonality;
-  String? _capturedImagePath;
 
   OnboardingStep get currentStep => _currentStep;
   String get plantSpecies => _plantSpecies;
   String get plantName => _plantName;
   String? get plantPersonality => _plantPersonality;
-  String? get capturedImagePath => _capturedImagePath;
 
   bool get canProceed {
     switch (_currentStep) {
       case OnboardingStep.plantSpecies:
-        return _plantSpecies.isNotEmpty || _capturedImagePath != null;
+        return _plantSpecies.isNotEmpty;
       case OnboardingStep.plantName:
         return _plantName.isNotEmpty;
       case OnboardingStep.plantPersonality:
@@ -56,6 +58,7 @@ class SplashViewModel extends BaseViewModel {
   }
 
   Future<void> openCamera() async {
+    setBusy(true);
     try {
       final XFile? image = await _imagePicker.pickImage(
         source: ImageSource.camera,
@@ -63,11 +66,19 @@ class SplashViewModel extends BaseViewModel {
       );
 
       if (image != null) {
-        _capturedImagePath = image.path;
+        try {
+          final species = await GeminiService.identifyPlantSpecies(image.path);
+          _plantSpecies = species;
+          plantSpeciesController.text = species;
+        } catch (e) {
+          debugPrint('Error identifying plant species: $e');
+        }
         notifyListeners();
       }
     } catch (e) {
       debugPrint('Error opening camera: $e');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -75,23 +86,36 @@ class SplashViewModel extends BaseViewModel {
     if (!canProceed) return;
 
     setBusy(true);
-
+    
     switch (_currentStep) {
       case OnboardingStep.plantSpecies:
         _currentStep = OnboardingStep.plantName;
-        setBusy(false);
-        notifyListeners();
         break;
+        
       case OnboardingStep.plantName:
         _currentStep = OnboardingStep.plantPersonality;
-        setBusy(false);
-        notifyListeners();
         break;
+        
       case OnboardingStep.plantPersonality:
-        //actual process plant data wapa koy idea though
-        await _navigationService.navigateToHomeView();
-        setBusy(false);
+        await _saveOnboardingData();
+        //go to HomeView  after saving
+        await _navigationService.navigateTo(Routes.homeView);
         break;
+    }
+    
+    setBusy(false);
+    notifyListeners();
+  }
+
+  Future<void> _saveOnboardingData() async {
+    try {
+      await _firebaseService.savePlantProfile(
+        species: _plantSpecies,
+        name: _plantName,
+        personality: _plantPersonality ?? '',
+      );
+    } catch (e) {
+      debugPrint('Failed to save onboarding data: $e');
     }
   }
 
