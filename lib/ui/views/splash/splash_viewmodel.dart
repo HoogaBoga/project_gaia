@@ -99,7 +99,7 @@ class SplashViewModel extends BaseViewModel {
       case OnboardingStep.plantPersonality:
         await _saveOnboardingData();
         //go to HomeView  after saving
-        await _navigationService.navigateTo(Routes.homeView);
+        await _navigationService.navigateTo(Routes.mainLayout);
         break;
     }
     
