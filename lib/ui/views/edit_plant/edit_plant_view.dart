@@ -152,8 +152,6 @@ class EditPlantView extends StackedView<EditPlantViewModel> {
   @override
   EditPlantViewModel viewModelBuilder(BuildContext context) => EditPlantViewModel();
 
-  // --- Background Widgets (Same as provided) ---
-
   Widget _buildVibrantBackground(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final baseWidth = size.width;

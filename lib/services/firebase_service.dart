@@ -131,6 +131,28 @@ class FirebaseService {
     };
   }
 
+  Future<Map<String, dynamic>?> getPlantProfile() async {
+    try {
+      final snapshot = await _databaseRef.child('plants/gaia_01/profile').get();
+      if (snapshot.exists) {
+        return Map<String, dynamic>.from(snapshot.value as Map);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching plant profile: $e');
+      return null;
+    }
+  }
+
+  Future<void> deletePlantData() async {
+    try {
+      await _databaseRef.child('plants/gaia_01/profile').remove();
+    } catch (e) {
+      debugPrint('Error deleting plant data: $e');
+      rethrow;
+    }
+  }
+
   // Dispose method if needed for cleanup
   void dispose() {
     // Clean up any listeners if necessary

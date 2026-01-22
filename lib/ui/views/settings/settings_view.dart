@@ -39,26 +39,25 @@ class SettingsView extends StackedView<SettingsViewModel> {
                       child: Placeholder(),
                     ),
                     const SizedBox(height: 15),
-                    const Text(
-                      "Pangalan sa plant",
-                      style: TextStyle(
+                    Text(
+                      viewModel.plantName,
+                      style: const TextStyle(
                         fontWeight: FontWeight.w500,
                         fontSize: 20,
                         color: Colors.white,
                       ),
                     ),
-                    const Text(
-                      "Species",
-                      style: TextStyle(
+                    Text(
+                      viewModel.species,
+                      style: const TextStyle(
                         fontWeight: FontWeight.w500,
                         fontSize: 20,
                         color: Color(0xFF7D7D7D),
                       ),
                     ),
-
-                    const Text(
-                      "Personality sa plant",
-                      style: TextStyle(
+                    Text(
+                      "Personality: ${viewModel.personality}",
+                      style: const TextStyle(
                         fontWeight: FontWeight.w500,
                         fontSize: 20,
                         color: Color(0xFF7D7D7D),

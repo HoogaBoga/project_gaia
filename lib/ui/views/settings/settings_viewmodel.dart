@@ -1,18 +1,33 @@
 import 'package:project_gaia/app/app.router.dart';
+import 'package:project_gaia/services/firebase_service.dart';
 import 'package:stacked/stacked.dart';
 import 'package:project_gaia/app/app.dialogs.dart';
 import 'package:project_gaia/app/app.locator.dart';
 import 'package:stacked_services/stacked_services.dart';
 
 class SettingsViewModel extends BaseViewModel {
-  int currentIndex = 0;
-  final _dialogService = locator<DialogService>();
   final _navigationService = locator<NavigationService>();
+  final _dialogService = locator<DialogService>();
+  final _firebaseService = locator<FirebaseService>();
 
-  SettingsViewModel();
+  String plantName = 'Loading...';
+  String species = '';
+  String personality = '';
 
-  void navigateToEditPlantInformation() {
-    _navigationService.navigateToEditPlantView();
+  Future<void> initialize() async {
+    setBusy(true);
+    final profile = await _firebaseService.getPlantProfile();
+    if (profile != null) {
+      plantName = profile['name'] ?? 'Gaia';
+      species = profile['species'] ?? 'Unknown';
+      personality = profile['personality'] ?? 'Friendly';
+    }
+    setBusy(false);
+  }
+
+  void navigateToEditPlantInformation() async {
+    await _navigationService.navigateToEditPlantView();
+    await initialize();
   }
 
   Future<void> openDeletePlantDialog() async {
@@ -27,9 +42,11 @@ class SettingsViewModel extends BaseViewModel {
     if (response?.confirmed == true) {
         setBusy(true);
 
-        // TODO : IMPLEMENT
+        await _firebaseService.deletePlantData();
 
         setBusy(false);
+
+        _navigationService.clearStackAndShow(Routes.splashView);
     }
   }
 }
