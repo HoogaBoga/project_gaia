@@ -21,7 +21,12 @@ class SettingsViewModel extends BaseViewModel {
       plantName = profile['name'] ?? 'Gaia';
       species = profile['species'] ?? 'Unknown';
       personality = profile['personality'] ?? 'Friendly';
+    } else {
+      plantName = 'No Profile Found';
+      species = '-';
+      personality = 'Default';
     }
+    notifyListeners();
     setBusy(false);
   }
 

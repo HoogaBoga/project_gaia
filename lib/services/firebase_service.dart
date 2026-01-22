@@ -134,8 +134,14 @@ class FirebaseService {
   Future<Map<String, dynamic>?> getPlantProfile() async {
     try {
       final snapshot = await _databaseRef.child('plants/gaia_01/profile').get();
-      if (snapshot.exists) {
-        return Map<String, dynamic>.from(snapshot.value as Map);
+      if (snapshot.exists && snapshot.value != null) {
+        final rawMap = snapshot.value as Map<dynamic, dynamic>;
+
+        final cleanMap = rawMap.map((key, value) {
+          return MapEntry(key.toString(), value);
+        });
+
+        return cleanMap;
       }
       return null;
     } catch (e) {
