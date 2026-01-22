@@ -1,3 +1,4 @@
+import 'package:project_gaia/services/gemini_service.dart';
 import 'package:project_gaia/ui/bottom_sheets/notice/notice_sheet.dart';
 import 'package:project_gaia/ui/dialogs/info_alert/info_alert_dialog.dart';
 import 'package:project_gaia/ui/views/home/home_view.dart';
@@ -27,6 +28,7 @@ import 'package:project_gaia/services/firebase_service.dart';
     LazySingleton(classType: DialogService),
     LazySingleton(classType: NavigationService),
     LazySingleton(classType: FirebaseService),
+    LazySingleton(classType: GeminiService),
     // @stacked-service
   ],
   bottomsheets: [
