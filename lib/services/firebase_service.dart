@@ -4,6 +4,25 @@ import 'package:flutter/foundation.dart';
 class FirebaseService {
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref();
 
+  //save plant data(specie,name,personality)
+  Future<void> savePlantProfile({
+    required String species,
+    required String name,
+    required String personality,
+  }) async {
+    try {
+      await _databaseRef.child('plants/gaia_01/profile').set({
+        'species': species,
+        'name': name,
+        'personality': personality,
+        'updated_at': ServerValue.timestamp,
+      });
+    } catch (e) {
+      debugPrint('Error saving plant profile: $e');
+      rethrow;
+    }
+  }
+
   // Stream for real-time sensor data from plants/gaia_01
   Stream<Map<String, dynamic>> getSensorDataStream() {
     return _databaseRef.child('plants/gaia_01').onValue.map((event) {
