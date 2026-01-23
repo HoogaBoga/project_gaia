@@ -16,17 +16,63 @@ class GeminiService {
 
   GeminiService({String? apiKey}) : apiKey = apiKey ?? Env.googleGeminiApiKey;
 
-  Future<String> generateChatResponse(String userMessage) async {
+  Future<String> generateChatResponse(
+    String userMessage, {
+    String? plantName,
+    String? personality,
+  }) async {
     final uri = Uri.parse(
       '$_baseUrl/$_model:generateContent?key=$apiKey',
     );
+
+    // Build system prompt with personality if provided
+    String systemPrompt = '';
+    if (plantName != null && plantName.isNotEmpty) {
+      systemPrompt = 'You are ${plantName}, a sentient plant.';
+    } else {
+      systemPrompt = 'You are Gaia, a sentient plant.';
+    }
+
+    if (personality != null && personality.isNotEmpty) {
+      systemPrompt += ' Your personality is $personality. ';
+      // Add personality-specific instructions
+      switch (personality.toLowerCase()) {
+        case 'friendly':
+          systemPrompt +=
+              'Be warm, welcoming, and conversational. Show genuine interest in the user.';
+          break;
+        case 'calm':
+          systemPrompt +=
+              'Be peaceful, serene, and thoughtful. Speak in a gentle, measured way.';
+          break;
+        case 'energetic':
+          systemPrompt +=
+              'Be enthusiastic, lively, and upbeat. Show excitement and energy in your responses.';
+          break;
+        case 'wise':
+          systemPrompt +=
+              'Be thoughtful, philosophical, and insightful. Share wisdom and deep thoughts.';
+          break;
+        case 'playful':
+          systemPrompt +=
+              'Be fun, humorous, and lighthearted. Use jokes and playful language.';
+          break;
+        default:
+          systemPrompt += 'Express yourself with a $personality personality.';
+      }
+    } else {
+      systemPrompt += ' Be friendly and helpful.';
+    }
+
+    systemPrompt +=
+        ' Respond naturally to the user\'s messages while maintaining your personality. Keep responses concise and engaging.';
 
     final body = {
       'contents': [
         {
           'parts': [
             {
-              'text': userMessage,
+              'text': '$systemPrompt\n\nUser: $userMessage\n\nYou:',
             }
           ]
         }
