@@ -143,13 +143,14 @@ class _HomeContentState extends State<_HomeContent>
                               letterSpacing: 1.2,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 3),
                           Text(
                             widget.viewModel.plantSpecies,
                             style: const TextStyle(
                               color: _textWhite,
                               fontSize: 18,
-                              fontWeight: FontWeight.w300,
+                              fontWeight: FontWeight.w200,
+                              fontStyle: FontStyle.italic, 
                             ),
                           ),
                           const SizedBox(height: 25),
@@ -159,6 +160,28 @@ class _HomeContentState extends State<_HomeContent>
                             child:
                                 _buildHpBar(widget.viewModel.currentHpPercent),
                           ),
+                          const SizedBox(height:15),
+
+                          Container(
+                          padding:
+                            const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                            decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.green.withValues(alpha: 0.5), width: 1.5),
+                          ),
+                          child: const Text(
+                            "Condition: Good",
+                          style: TextStyle(
+                            color: Colors.greenAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+
                         ],
                       ),
                     ),
