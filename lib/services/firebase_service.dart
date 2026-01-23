@@ -23,6 +23,25 @@ class FirebaseService {
     }
   }
 
+  // Get plant profile (name, personality, species)
+  Future<Map<String, String?>> getPlantProfile() async {
+    try {
+      final snapshot = await _databaseRef.child('plants/gaia_01/profile').get();
+      if (snapshot.exists) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        return {
+          'name': data['name']?.toString(),
+          'personality': data['personality']?.toString(),
+          'species': data['species']?.toString(),
+        };
+      }
+      return {'name': null, 'personality': null, 'species': null};
+    } catch (e) {
+      debugPrint('Error fetching plant profile: $e');
+      return {'name': null, 'personality': null, 'species': null};
+    }
+  }
+
   // Stream for real-time sensor data from plants/gaia_01
   Stream<Map<String, dynamic>> getSensorDataStream() {
     return _databaseRef.child('plants/gaia_01').onValue.map((event) {
@@ -51,6 +70,36 @@ class FirebaseService {
     } catch (e) {
       debugPrint('Error fetching sensor data: $e');
       return _getDefaultSensorData();
+    }
+  }
+
+  // Get raw sensor values for chatbot mood (humidity, soil_moisture, soil_raw, temperature)
+  Future<Map<String, double?>> getRawSensorValues() async {
+    try {
+      final snapshot = await _databaseRef.child('plants/gaia_01').get();
+      if (snapshot.exists) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        return {
+          'humidity': _parseDouble(data['humidity']),
+          'soil_moisture': _parseDouble(data['soil_moisture']),
+          'soil_raw': _parseDouble(data['soil_raw']),
+          'temperature': _parseDouble(data['temperature']),
+        };
+      }
+      return {
+        'humidity': null,
+        'soil_moisture': null,
+        'soil_raw': null,
+        'temperature': null,
+      };
+    } catch (e) {
+      debugPrint('Error fetching raw sensor values: $e');
+      return {
+        'humidity': null,
+        'soil_moisture': null,
+        'soil_raw': null,
+        'temperature': null,
+      };
     }
   }
 
