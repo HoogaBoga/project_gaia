@@ -11,6 +11,7 @@ class FirebaseService {
   Future<String?> uploadPlantImage(Uint8List imageBytes, String plantId) async {
     try {
       debugPrint("☁️ [FirebaseService] Starting upload for $plantId...");
+      debugPrint("☁️ [FirebaseService] Image size: ${imageBytes.length} bytes");
 
       final String fileName =
           "visual_${DateTime.now().millisecondsSinceEpoch}.png";
@@ -18,11 +19,18 @@ class FirebaseService {
       final ref = _firebaseStorage.ref().child('plants/$plantId/$fileName');
 
       final metaData = SettableMetadata(contentType: 'image/png');
+
+      debugPrint("☁️ [FirebaseService] Uploading to: ${ref.fullPath}");
       await ref.putData(imageBytes, metaData);
 
       final downloadUrl = await ref.getDownloadURL();
       debugPrint("✅ [FirebaseService] Upload success: $downloadUrl");
       return downloadUrl;
+    } on FirebaseException catch (e) {
+      debugPrint("❌ [FirebaseService] Firebase error: ${e.code}");
+      debugPrint("❌ [FirebaseService] Error message: ${e.message}");
+      debugPrint("❌ [FirebaseService] Error details: ${e.stackTrace}");
+      return null;
     } catch (e) {
       debugPrint("❌ [FirebaseService] Upload failed: $e");
       return null;
@@ -30,21 +38,58 @@ class FirebaseService {
   }
 
   // get saved visual state
+  // get saved visual state
+  // get saved visual state
   Future<Map<String, dynamic>?> getPlantVisuals() async {
     try {
+      debugPrint('🔍 Reading from: plants/gaia_01/visuals');
       final snapshot = await _databaseRef.child('plants/gaia_01/visuals').get();
 
-      if (snapshot.exists) {
-        final data = snapshot.value as Map<dynamic, dynamic>;
+      debugPrint('📊 Snapshot exists: ${snapshot.exists}');
 
-        return {
-          'imageUrl': data['imageUrl'],
-          'visualState': data['visualState'],
+      if (snapshot.exists && snapshot.value != null) {
+        final dynamic rawData = snapshot.value;
+
+        // Handle both Map<Object?, Object?> and Map<dynamic, dynamic>
+        Map<String, dynamic> data;
+        if (rawData is Map) {
+          data = Map<String, dynamic>.from(rawData as Map);
+        } else {
+          debugPrint('❌ Unexpected data type: ${rawData.runtimeType}');
+          return null;
+        }
+
+        // ✅ FIX: Check if we need to access nested 'visuals' object
+        Map<String, dynamic> visualsData;
+        if (data.containsKey('visuals')) {
+          // Data is nested (we got the parent node by mistake)
+          debugPrint('⚠️ Data is nested, extracting visuals...');
+          visualsData = Map<String, dynamic>.from(data['visuals'] as Map);
+        } else {
+          // Data is already at the correct level
+          visualsData = data;
+        }
+
+        final imageUrl = visualsData['imageUrl'];
+        final visualState = visualsData['visualState'];
+
+        debugPrint('🔗 imageUrl: $imageUrl');
+        debugPrint('🎯 visualState: $visualState');
+
+        final result = {
+          'imageUrl': imageUrl?.toString(),
+          'visualState': visualState?.toString(),
         };
+
+        debugPrint('✅ Parsed result: $result');
+        return result;
       }
+
+      debugPrint('⚠️ No data found');
       return null;
-    } catch (e) {
-      debugPrint('Error getting plant visuals: $e');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error getting plant visuals: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
       return null;
     }
   }
