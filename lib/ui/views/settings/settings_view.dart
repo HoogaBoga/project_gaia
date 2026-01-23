@@ -6,6 +6,11 @@ class SettingsView extends StackedView<SettingsViewModel> {
   const SettingsView({Key? key}) : super(key: key);
 
   @override
+  void onViewModelReady(SettingsViewModel viewModel) {
+    viewModel.initialize();
+  }
+
+  @override
   Widget builder(
     BuildContext context,
     SettingsViewModel viewModel,
