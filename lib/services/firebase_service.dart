@@ -180,29 +180,6 @@ class FirebaseService {
     };
   }
 
-  Future<Map<String, dynamic>?> getPlantProfile() async {
-    try {
-      final snapshot = await _databaseRef.child('plants/gaia_01/profile').get();
-      
-      if (snapshot.exists && snapshot.value != null) {
-        final dynamic data = snapshot.value;
-
-        if (data is Map) {
-          final cleanMap = Map<String, dynamic>.from(data.map((key, value) {
-            return MapEntry(key.toString(), value);
-          }));
-          return cleanMap;
-        } else {
-          debugPrint('Warning: Profile data found but it is not a Map. Type: ${data.runtimeType}');
-        }
-      }
-      return null;
-    } catch (e) {
-      debugPrint('Error fetching plant profile: $e');
-      return null;
-    }
-  }
-
   Future<void> deletePlantData() async {
     try {
       await _databaseRef.child('plants/gaia_01/profile').remove();
