@@ -19,6 +19,7 @@ dependencies:
   http: ^1.6.0
   firebase_core: ^4.3.0
   firebase_database: ^12.1.1
+  firebase_storage: ^13.0.6
 dev_dependencies:
   build_runner: ^2.4.5
   flutter_test:

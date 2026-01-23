@@ -1,8 +1,66 @@
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
 class FirebaseService {
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref();
+  final FirebaseStorage _firebaseStorage = FirebaseStorage.instanceFor(
+      bucket: "gs://project-gaia-d7b6e.firebasestorage.app");
+
+  // upload image to database
+  Future<String?> uploadPlantImage(Uint8List imageBytes, String plantId) async {
+    try {
+      debugPrint("☁️ [FirebaseService] Starting upload for $plantId...");
+
+      final String fileName =
+          "visual_${DateTime.now().millisecondsSinceEpoch}.png";
+
+      final ref = _firebaseStorage.ref().child('plants/$plantId/$fileName');
+
+      final metaData = SettableMetadata(contentType: 'image/png');
+      await ref.putData(imageBytes, metaData);
+
+      final downloadUrl = await ref.getDownloadURL();
+      debugPrint("✅ [FirebaseService] Upload success: $downloadUrl");
+      return downloadUrl;
+    } catch (e) {
+      debugPrint("❌ [FirebaseService] Upload failed: $e");
+      return null;
+    }
+  }
+
+  // get saved visual state
+  Future<Map<String, dynamic>?> getPlantVisuals() async {
+    try {
+      final snapshot = await _databaseRef.child('plants/gaia_01/visuals').get();
+
+      if (snapshot.exists) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+
+        return {
+          'imageUrl': data['imageUrl'],
+          'visualState': data['visualState'],
+        };
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error getting plant visuals: $e');
+      return null;
+    }
+  }
+
+  // update visual state
+  Future<void> updatePlantVisuals(String imageUrl, String zone) async {
+    try {
+      await _databaseRef.child('plants/gaia_01/visuals').set({
+        'imageUrl': imageUrl,
+        'visualState': zone,
+        'updated_at': ServerValue.timestamp,
+      });
+    } catch (e) {
+      debugPrint('Error updating plant visuals: $e');
+    }
+  }
 
   //save plant data(specie,name,personality)
   Future<void> savePlantProfile({

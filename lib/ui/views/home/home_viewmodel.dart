@@ -7,6 +7,7 @@ import 'package:stacked/stacked.dart';
 import 'package:project_gaia/ui/widgets/notification/notification_item_model.dart';
 import 'package:project_gaia/services/firebase_service.dart';
 import 'package:project_gaia/services/gemini_service.dart';
+import 'package:http/http.dart' as http;
 
 class HomeViewModel extends BaseViewModel {
   final String plantName = 'Gaia';
@@ -15,12 +16,14 @@ class HomeViewModel extends BaseViewModel {
   double currentHpPercent = 0.65;
   double waterLevel = 0.0;
 
+  final String _plantId = "gaia_01";
+
   double layer1TargetY = 80.0;
   double layer2TargetY = 250.0;
   double layer3TargetY = 420.0;
 
   bool isDevMode =
-      true; //so that the api wont be called over and over and get my money huhu
+      false; //so that the api wont be called over and over and get my money huhu
 
   // --- NEW CODE START ---
 
@@ -77,6 +80,25 @@ class HomeViewModel extends BaseViewModel {
 
     if (currentZone == _lastVisualState && plantImageBytes != null) return;
 
+    final savedVisuals = await _firebaseService.getPlantVisuals();
+
+    if (savedVisuals != null && savedVisuals['visualState'] == currentZone) {
+      String? savedUrl = savedVisuals['imageUrl'];
+
+      if (savedUrl != null) {
+        print("✅ Found SAVED image in Firebase! Downloading...");
+
+        final response = await http.get(Uri.parse(savedUrl));
+
+        if (response.statusCode == 200) {
+          plantImageBytes = response.bodyBytes;
+          _lastVisualState = currentZone;
+          notifyListeners();
+          return;
+        }
+      }
+    }
+
     isGeneratingImage = true;
     notifyListeners();
 
@@ -90,6 +112,15 @@ class HomeViewModel extends BaseViewModel {
       plantImageBytes = newImage;
       _lastVisualState = currentZone;
     }
+
+    print("☁️ Uploading new image to Storage...");
+
+    _firebaseService.uploadPlantImage(newImage!, _plantId).then((downloadUrl) {
+      if (downloadUrl != null) {
+        print("💾 Saving link to Database...");
+        _firebaseService.updatePlantVisuals(downloadUrl, currentZone);
+      }
+    });
 
     isGeneratingImage = false;
     notifyListeners();
