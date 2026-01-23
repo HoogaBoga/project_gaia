@@ -37,12 +37,16 @@ class EditPlantView extends StackedView<EditPlantViewModel> {
                             icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
                             onPressed: () => Navigator.of(context).pop(),
                           ),
-                          const Text(
-                            "Edit Plant Information",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 32,
-                              color: Colors.white,
+                          const Expanded(
+                            child: Text(
+                              "Edit Plant Information",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 32,
+                                color: Colors.white,
+                              ),
+                              overflow: TextOverflow.visible,
+                              softWrap: true,
                             ),
                           ),
                         ],
@@ -151,8 +155,6 @@ class EditPlantView extends StackedView<EditPlantViewModel> {
 
   @override
   EditPlantViewModel viewModelBuilder(BuildContext context) => EditPlantViewModel();
-
-  // --- Background Widgets (Same as provided) ---
 
   Widget _buildVibrantBackground(BuildContext context) {
     final size = MediaQuery.of(context).size;
