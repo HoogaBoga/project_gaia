@@ -273,4 +273,43 @@ class GeminiService {
       return "Gaia can't speak right now.";
     }
   }
+
+    Future<Map<String, dynamic>?> getPlantCareProfile(String species) async {
+      final url = Uri.parse(
+          '$_baseUrl/$_model:generateContent?key=$apiKey');
+
+      final prompt = """
+        You are a botanist. Return a JSON object ONLY containing the ideal growing conditions for the plant species "$species".
+        Use this exact format (no markdown, no extra text):
+        {
+          "min_temp_c": 20,
+          "max_temp_c": 30,
+          "min_humidity": 50,
+          "min_soil_moisture": 30
+        }
+        values should be integers. min_soil_moisture is a percentage (0-100) where the plant needs water.
+      """;
+
+      try {
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            "contents": [
+              {"parts": [{"text": prompt}]}
+            ]
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          String text = data['candidates'][0]['content']['parts'][0]['text'];
+          text = text.replaceAll('```json', '').replaceAll('```', '').trim();
+          return jsonDecode(text) as Map<String, dynamic>;
+        }
+      } catch (e) {
+        print("Error fetching care profile: $e");
+      }
+      return null;
+    }
 }

@@ -10,8 +10,10 @@ import 'package:project_gaia/services/gemini_service.dart';
 import 'package:http/http.dart' as http;
 
 class HomeViewModel extends BaseViewModel {
-  final String plantName = 'Gaia';
-  final String plantSpecies = 'Ficus pseudopalma';
+  String plantName = 'Gaia';
+  String plantSpecies = 'Unknown Species';
+
+  Map<String, dynamic>? _idealConditions;
 
   double currentHpPercent = 0.65;
   double waterLevel = 0.0;
@@ -37,20 +39,8 @@ class HomeViewModel extends BaseViewModel {
   bool _showNotificationsOverlay = false;
   bool get showNotificationsOverlay => _showNotificationsOverlay;
 
-  List<NotificationModel> _notifications = [
-    NotificationModel(
-      icon: Icons.water_drop,
-      iconColor: Colors.blue,
-      title: "You forgot to water me :(",
-      time: "10:00AM",
-    ),
-    NotificationModel(
-      icon: Icons.wb_sunny_rounded,
-      iconColor: Colors.amber,
-      title: "I need more sunlight sir...",
-      time: "11:00AM",
-    ),
-  ];
+  // Initial dummy notifications (optional: you can clear these in initialise if preferred)
+  List<NotificationModel> _notifications = [];
 
   List<NotificationModel> get notifications => _notifications;
 
@@ -65,6 +55,80 @@ class HomeViewModel extends BaseViewModel {
     notifyListeners();
   }
 
+  // 3. New: Logic to check raw sensor data against ideal conditions
+  void _checkPlantHealth(Map<String, dynamic> data) {
+    if (_idealConditions == null) return;
+
+    // Extract RAW real-world values (not the 0.0-1.0 normalized ones)
+    // Note: 'raw_data' comes from the updated FirebaseService structure
+    final rawData = data['raw_data'] as Map;
+    final double currentTemp = (rawData['temperature_raw'] as num).toDouble();
+    final double currentHumidity = (rawData['humidity_raw'] as num).toDouble();
+    
+    // Calculate soil percentage from normalized water level (0.0 - 1.0)
+    final double currentSoilPercent = (data['water'] as num).toDouble() * 100;
+
+    // Clear old auto-generated warnings to avoid duplicates
+    _notifications.removeWhere((n) => n.title.contains("Warning:"));
+
+    // --- Temperature Check ---
+    double minTemp = (_idealConditions!['min_temp_c'] as num).toDouble();
+    double maxTemp = (_idealConditions!['max_temp_c'] as num).toDouble();
+
+    if (currentTemp < minTemp) {
+      _addNotification(
+        icon: Icons.ac_unit,
+        color: Colors.blue,
+        title: "Warning: It's too cold!",
+        subtitle: "$plantName needs at least ${minTemp.toInt()}°C (Current: ${currentTemp.toStringAsFixed(1)}°C)"
+      );
+    } else if (currentTemp > maxTemp) {
+      _addNotification(
+        icon: Icons.local_fire_department,
+        color: Colors.red,
+        title: "Warning: It's too hot!",
+        subtitle: "$plantName prefers under ${maxTemp.toInt()}°C (Current: ${currentTemp.toStringAsFixed(1)}°C)"
+      );
+    }
+
+    // --- Humidity Check ---
+    double minHum = (_idealConditions!['min_humidity'] as num).toDouble();
+    if (currentHumidity < minHum) {
+      _addNotification(
+        icon: Icons.water_drop_outlined,
+        color: Colors.orange,
+        title: "Warning: Air is too dry",
+        subtitle: "$plantSpecies needs >${minHum.toInt()}% humidity (Current: ${currentHumidity.toInt()}%)"
+      );
+    }
+
+    // --- Soil Moisture Check ---
+    double minSoil = (_idealConditions!['min_soil_moisture'] as num).toDouble();
+    if (currentSoilPercent < minSoil) {
+       _addNotification(
+        icon: Icons.water_drop,
+        color: Colors.blueAccent,
+        title: "Warning: Thirsty!",
+        subtitle: "Soil moisture is low (${currentSoilPercent.toInt()}%). Please water me."
+      );
+    }
+  }
+
+  void _addNotification({required IconData icon, required Color color, required String title, required String subtitle}) {
+    // Prevent duplicate entries for the exact same issue
+    if (_notifications.any((n) => n.title == title)) return;
+
+    _notifications.insert(0, NotificationModel(
+      icon: icon,
+      iconColor: color,
+      title: title,
+      time: subtitle, // Using 'time' field for the description text
+    ));
+    
+    // If overlay is closed, trigger UI update so the red dot (if you have one) or state updates
+    notifyListeners();
+  }
+
   Future<void> _updateDigitalTwin() async {
     if (_isUpdatingDigitalTwin) {
       print("⏳ Already updating digital twin, skipping...");
@@ -74,7 +138,7 @@ class HomeViewModel extends BaseViewModel {
     String currentZone = _getHealthZone(currentHpPercent);
 
     if (currentZone == _lastVisualState && plantImageBytes != null) {
-      print("✅ Same zone ($currentZone) - using existing image.");
+      // print("✅ Same zone ($currentZone) - using existing image.");
       return;
     }
 
@@ -83,16 +147,6 @@ class HomeViewModel extends BaseViewModel {
     try {
       print("🔍 Checking database for $currentZone image...");
       final savedVisuals = await _firebaseService.getPlantVisuals();
-
-      // ✅ Debug logging
-      if (savedVisuals == null) {
-        print("⚠️ No visuals data found in database at all");
-      } else {
-        print("📊 Database has: ${savedVisuals.toString()}");
-        print("🎯 Current zone: $currentZone");
-        print("💾 Saved zone: ${savedVisuals['visualState']}");
-        print("🔗 Saved URL: ${savedVisuals['imageUrl']}");
-      }
 
       if (savedVisuals != null && savedVisuals['visualState'] == currentZone) {
         String? savedUrl = savedVisuals['imageUrl'];
@@ -182,7 +236,7 @@ class HomeViewModel extends BaseViewModel {
     return "A 3D render of a $plantSpecies plant in a pot. The plant is $visual. Isometric view, dark blue background";
   }
 
-  // ✅ This should ONLY be called from onViewModelReady
+  // 4. Updated: Initialize now fetches profile and ideal conditions
   void initialise() {
     if (_isInitialized) {
       print("⚠️ Already initialized, skipping...");
@@ -193,8 +247,28 @@ class HomeViewModel extends BaseViewModel {
     _isInitialized = true;
     setBusy(true);
 
-    // Small delay to ensure UI is ready
-    Future.delayed(Duration(milliseconds: 300), () {
+    // Run startup logic
+    Future(() async {
+      try {
+        // A. Fetch Plant Profile
+        final profile = await _firebaseService.getPlantProfile();
+        if (profile['name'] != null) plantName = profile['name']!;
+        if (profile['species'] != null) {
+          plantSpecies = profile['species']!;
+          print("🌿 Identified Species: $plantSpecies");
+          
+          // B. Get Ideal Conditions from Gemini
+          // Note: Ensure you have added getPlantCareProfile to your GeminiService
+          _idealConditions = await _geminiService.getPlantCareProfile(plantSpecies);
+          if (_idealConditions != null) {
+            print("✅ Ideal conditions loaded: $_idealConditions");
+          }
+        }
+      } catch (e) {
+        print("❌ Error fetching plant profile: $e");
+      }
+
+      // C. Start Sensor Stream
       _sensorSubscription =
           _firebaseService.getSensorDataStream().listen((data) {
         waterLevel = (data['water'] as num).toDouble();
@@ -204,7 +278,10 @@ class HomeViewModel extends BaseViewModel {
 
         double newHpPercent = (waterLevel + humidity + sunlight + temp) / 4;
 
-        // Only update if changed significantly
+        // D. Check Health Stats (Notifications)
+        _checkPlantHealth(data);
+
+        // Only update Digital Twin if changed significantly
         if ((newHpPercent - currentHpPercent).abs() > 0.05) {
           currentHpPercent = newHpPercent;
           _updateDigitalTwin();
