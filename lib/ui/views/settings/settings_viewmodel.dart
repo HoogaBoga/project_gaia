@@ -13,9 +13,12 @@ class SettingsViewModel extends BaseViewModel {
   String plantName = 'Loading...';
   String species = '';
   String personality = '';
+  
+  String? plantImageUrl;
 
   Future<void> initialize() async {
     setBusy(true);
+
     final profile = await _firebaseService.getPlantProfile();
     if (profile != null) {
       plantName = profile['name'] ?? 'Gaia';
@@ -26,6 +29,12 @@ class SettingsViewModel extends BaseViewModel {
       species = '-';
       personality = 'Default';
     }
+
+    final visuals = await _firebaseService.getPlantVisuals();
+    if (visuals != null) {
+      plantImageUrl = visuals['imageUrl'];
+    }
+
     notifyListeners();
     setBusy(false);
   }

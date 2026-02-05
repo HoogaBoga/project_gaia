@@ -38,11 +38,35 @@ class SettingsView extends StackedView<SettingsViewModel> {
                       ),
                     ),
                     const SizedBox(height: 15),
-                    const CircleAvatar(
-                      radius: 100.0,
-                      backgroundColor: Colors.grey,
-                      child: Placeholder(),
+                    
+                    // --- UPDATED IMAGE SECTION ---
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 4), // Added a nice border
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          )
+                        ]
+                      ),
+                      child: CircleAvatar(
+                        radius: 100.0,
+                        backgroundColor: const Color(0xFF0F3057), // Dark blue fallback
+                        // If we have an URL, use it. Otherwise null.
+                        backgroundImage: viewModel.plantImageUrl != null
+                            ? NetworkImage(viewModel.plantImageUrl!)
+                            : null,
+                        // If NO URL, show an icon instead
+                        child: viewModel.plantImageUrl == null
+                            ? const Icon(Icons.local_florist, size: 80, color: Colors.white54)
+                            : null,
+                      ),
                     ),
+                    // -----------------------------
+
                     const SizedBox(height: 15),
                     Text(
                       viewModel.plantName,
