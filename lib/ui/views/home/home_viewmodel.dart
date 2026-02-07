@@ -24,7 +24,7 @@ class HomeViewModel extends BaseViewModel {
   double layer2TargetY = 250.0;
   double layer3TargetY = 420.0;
 
-  bool isDevMode = true;
+  bool isDevMode = false;
 
   final _firebaseService = locator<FirebaseService>();
   final _geminiService = locator<GeminiService>();
@@ -64,7 +64,7 @@ class HomeViewModel extends BaseViewModel {
     final rawData = data['raw_data'] as Map;
     final double currentTemp = (rawData['temperature_raw'] as num).toDouble();
     final double currentHumidity = (rawData['humidity_raw'] as num).toDouble();
-    
+
     // Calculate soil percentage from normalized water level (0.0 - 1.0)
     final double currentSoilPercent = (data['water'] as num).toDouble() * 100;
 
@@ -77,54 +77,60 @@ class HomeViewModel extends BaseViewModel {
 
     if (currentTemp < minTemp) {
       _addNotification(
-        icon: Icons.ac_unit,
-        color: Colors.blue,
-        title: "Warning: It's too cold!",
-        subtitle: "$plantName needs at least ${minTemp.toInt()}°C (Current: ${currentTemp.toStringAsFixed(1)}°C)"
-      );
+          icon: Icons.ac_unit,
+          color: Colors.blue,
+          title: "Warning: It's too cold!",
+          subtitle:
+              "$plantName needs at least ${minTemp.toInt()}°C (Current: ${currentTemp.toStringAsFixed(1)}°C)");
     } else if (currentTemp > maxTemp) {
       _addNotification(
-        icon: Icons.local_fire_department,
-        color: Colors.red,
-        title: "Warning: It's too hot!",
-        subtitle: "$plantName prefers under ${maxTemp.toInt()}°C (Current: ${currentTemp.toStringAsFixed(1)}°C)"
-      );
+          icon: Icons.local_fire_department,
+          color: Colors.red,
+          title: "Warning: It's too hot!",
+          subtitle:
+              "$plantName prefers under ${maxTemp.toInt()}°C (Current: ${currentTemp.toStringAsFixed(1)}°C)");
     }
 
     // --- Humidity Check ---
     double minHum = (_idealConditions!['min_humidity'] as num).toDouble();
     if (currentHumidity < minHum) {
       _addNotification(
-        icon: Icons.water_drop_outlined,
-        color: Colors.orange,
-        title: "Warning: Air is too dry",
-        subtitle: "$plantSpecies needs >${minHum.toInt()}% humidity (Current: ${currentHumidity.toInt()}%)"
-      );
+          icon: Icons.water_drop_outlined,
+          color: Colors.orange,
+          title: "Warning: Air is too dry",
+          subtitle:
+              "$plantSpecies needs >${minHum.toInt()}% humidity (Current: ${currentHumidity.toInt()}%)");
     }
 
     // --- Soil Moisture Check ---
     double minSoil = (_idealConditions!['min_soil_moisture'] as num).toDouble();
     if (currentSoilPercent < minSoil) {
-       _addNotification(
-        icon: Icons.water_drop,
-        color: Colors.blueAccent,
-        title: "Warning: Thirsty!",
-        subtitle: "Soil moisture is low (${currentSoilPercent.toInt()}%). Please water me."
-      );
+      _addNotification(
+          icon: Icons.water_drop,
+          color: Colors.blueAccent,
+          title: "Warning: Thirsty!",
+          subtitle:
+              "Soil moisture is low (${currentSoilPercent.toInt()}%). Please water me.");
     }
   }
 
-  void _addNotification({required IconData icon, required Color color, required String title, required String subtitle}) {
+  void _addNotification(
+      {required IconData icon,
+      required Color color,
+      required String title,
+      required String subtitle}) {
     // Prevent duplicate entries for the exact same issue
     if (_notifications.any((n) => n.title == title)) return;
 
-    _notifications.insert(0, NotificationModel(
-      icon: icon,
-      iconColor: color,
-      title: title,
-      time: subtitle, // Using 'time' field for the description text
-    ));
-    
+    _notifications.insert(
+        0,
+        NotificationModel(
+          icon: icon,
+          iconColor: color,
+          title: title,
+          time: subtitle, // Using 'time' field for the description text
+        ));
+
     // If overlay is closed, trigger UI update so the red dot (if you have one) or state updates
     notifyListeners();
   }
@@ -233,7 +239,7 @@ class HomeViewModel extends BaseViewModel {
         break;
     }
 
-    return "A 3D render of a $plantSpecies plant in a pot. The plant is $visual. Isometric view, dark blue background";
+    return "A 3D render of a $plantSpecies plant in a pot. The plant is $visual. Isometric view, transparent background";
   }
 
   // 4. Updated: Initialize now fetches profile and ideal conditions
@@ -256,10 +262,11 @@ class HomeViewModel extends BaseViewModel {
         if (profile['species'] != null) {
           plantSpecies = profile['species']!;
           print("🌿 Identified Species: $plantSpecies");
-          
+
           // B. Get Ideal Conditions from Gemini
           // Note: Ensure you have added getPlantCareProfile to your GeminiService
-          _idealConditions = await _geminiService.getPlantCareProfile(plantSpecies);
+          _idealConditions =
+              await _geminiService.getPlantCareProfile(plantSpecies);
           if (_idealConditions != null) {
             print("✅ Ideal conditions loaded: $_idealConditions");
           }
