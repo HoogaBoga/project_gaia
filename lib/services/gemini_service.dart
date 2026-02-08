@@ -274,11 +274,71 @@ class GeminiService {
     }
   }
 
-    Future<Map<String, dynamic>?> getPlantCareProfile(String species) async {
-      final url = Uri.parse(
-          '$_baseUrl/$_model:generateContent?key=$apiKey');
+  /// Generate a short, first-person plant health analysis for the stats page.
+  /// The plant speaks in-character based on its personality and current sensor readings.
+  Future<String> getPlantAnalysis({
+    required String plantName,
+    required String species,
+    required String personality,
+    required double temperature,
+    required double humidity,
+    required double soilMoisture,
+    required double lightIntensity,
+    required double overallHealth,
+    required String conditionLabel,
+  }) async {
+    final url = Uri.parse('$_baseUrl/$_model:generateContent?key=$apiKey');
 
-      final prompt = """
+    final prompt = """
+You are $plantName, a sentient $species plant with a $personality personality.
+You live inside a plant-monitoring app called "Project Gaia" that tracks your health via sensors.
+
+Current sensor readings:
+- Temperature: ${temperature.toStringAsFixed(1)}°C
+- Humidity: ${humidity.toStringAsFixed(1)}%
+- Soil Moisture: ${soilMoisture.toStringAsFixed(0)}%
+- Light Intensity: ${lightIntensity.toStringAsFixed(0)} lux
+- Overall Health: ${(overallHealth * 100).toStringAsFixed(0)}% ($conditionLabel)
+
+Task: Write a short 1-2 sentence first-person analysis of your current condition.
+- Speak AS the plant, in character with your $personality personality.
+- Highlight the most urgent concern (if any), or express contentment if healthy.
+- Be specific with numbers from the readings.
+- Do NOT use markdown, quotes, or formatting. Just plain text.
+""";
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "contents": [
+            {
+              "parts": [
+                {"text": prompt}
+              ]
+            }
+          ]
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final text = data['candidates']?[0]?['content']?['parts']?[0]?['text'];
+        if (text is String && text.trim().isNotEmpty) {
+          return text.trim();
+        }
+      }
+    } catch (e) {
+      print("Error generating plant analysis: $e");
+    }
+    return '';
+  }
+
+  Future<Map<String, dynamic>?> getPlantCareProfile(String species) async {
+    final url = Uri.parse('$_baseUrl/$_model:generateContent?key=$apiKey');
+
+    final prompt = """
         You are a botanist. Return a JSON object ONLY containing the ideal growing conditions for the plant species "$species".
         Use this exact format (no markdown, no extra text):
         {
@@ -290,26 +350,30 @@ class GeminiService {
         values should be integers. min_soil_moisture is a percentage (0-100) where the plant needs water.
       """;
 
-      try {
-        final response = await http.post(
-          url,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            "contents": [
-              {"parts": [{"text": prompt}]}
-            ]
-          }),
-        );
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "contents": [
+            {
+              "parts": [
+                {"text": prompt}
+              ]
+            }
+          ]
+        }),
+      );
 
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          String text = data['candidates'][0]['content']['parts'][0]['text'];
-          text = text.replaceAll('```json', '').replaceAll('```', '').trim();
-          return jsonDecode(text) as Map<String, dynamic>;
-        }
-      } catch (e) {
-        print("Error fetching care profile: $e");
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        String text = data['candidates'][0]['content']['parts'][0]['text'];
+        text = text.replaceAll('```json', '').replaceAll('```', '').trim();
+        return jsonDecode(text) as Map<String, dynamic>;
       }
-      return null;
+    } catch (e) {
+      print("Error fetching care profile: $e");
     }
+    return null;
+  }
 }

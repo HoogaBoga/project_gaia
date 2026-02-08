@@ -3,9 +3,11 @@ import 'dart:ui';
 import 'package:stacked/stacked.dart';
 import 'package:project_gaia/app/app.locator.dart';
 import 'package:project_gaia/services/firebase_service.dart';
+import 'package:project_gaia/services/gemini_service.dart';
 
 class StatsPageViewmodel extends BaseViewModel {
   final _firebaseService = locator<FirebaseService>();
+  final _geminiService = locator<GeminiService>();
 
   double waterLevel = 0.0;
   double humidityLevel = 0.0;
@@ -18,6 +20,16 @@ class StatsPageViewmodel extends BaseViewModel {
   double rawHumidity = 0.0;
   double rawSoilMoisture = 0.0;
   double rawLightIntensity = 0.0;
+
+  // Plant profile
+  String plantName = 'Gaia';
+  String plantSpecies = 'Unknown';
+  String plantPersonality = 'Friendly';
+
+  // Gemini analysis
+  String analysisText = '';
+  bool isLoadingAnalysis = true;
+  bool _hasGeneratedAnalysis = false;
 
   String get conditionLabel {
     if (overallHealth >= 0.8) return 'Excellent';
@@ -38,35 +50,37 @@ class StatsPageViewmodel extends BaseViewModel {
   StreamSubscription? _sensorDataSubscription;
 
   void initializeData() {
+    // Fetch plant profile first, then start sensor stream
+    _loadProfileAndData();
+  }
+
+  Future<void> _loadProfileAndData() async {
+    try {
+      final profile = await _firebaseService.getPlantProfile();
+      if (profile['name'] != null) plantName = profile['name']!;
+      if (profile['species'] != null) plantSpecies = profile['species']!;
+      if (profile['personality'] != null) {
+        plantPersonality = profile['personality']!;
+      }
+    } catch (e) {
+      print('Error loading plant profile: $e');
+    }
+
     // Subscribe to real-time sensor data from Firebase
     _sensorDataSubscription = _firebaseService.getSensorDataStream().listen(
       (data) {
-        waterLevel = (data['water'] as num).toDouble();
-        humidityLevel = (data['humidity'] as num).toDouble();
-        sunlightLevel = (data['sunlight'] as num).toDouble();
-        temperatureLevel = (data['temperature'] as num).toDouble();
+        _updateFromData(data);
 
-        // Extract raw values for display
-        final rawData = data['raw_data'] as Map?;
-        if (rawData != null) {
-          rawTemperature =
-              (rawData['temperature_raw'] as num?)?.toDouble() ?? 0.0;
-          rawHumidity = (rawData['humidity_raw'] as num?)?.toDouble() ?? 0.0;
-          rawSoilMoisture =
-              (rawData['soil_moisture'] as num?)?.toDouble() ?? 0.0;
-          rawLightIntensity =
-              (rawData['light_intensity_raw'] as num?)?.toDouble() ?? 0.0;
+        // Generate analysis once after we have sensor data
+        if (!_hasGeneratedAnalysis) {
+          _hasGeneratedAnalysis = true;
+          _generateAnalysis();
         }
-
-        overallHealth =
-            (waterLevel + humidityLevel + sunlightLevel + temperatureLevel) / 4;
 
         notifyListeners();
       },
       onError: (error) {
-        // Handle error - could show a snackbar or log
         print('Error fetching sensor data: $error');
-        // Set default values on error
         _setDefaultValues();
       },
     );
@@ -75,28 +89,61 @@ class StatsPageViewmodel extends BaseViewModel {
     _fetchInitialData();
   }
 
+  void _updateFromData(Map<String, dynamic> data) {
+    waterLevel = (data['water'] as num).toDouble();
+    humidityLevel = (data['humidity'] as num).toDouble();
+    sunlightLevel = (data['sunlight'] as num).toDouble();
+    temperatureLevel = (data['temperature'] as num).toDouble();
+
+    final rawData = data['raw_data'] as Map?;
+    if (rawData != null) {
+      rawTemperature = (rawData['temperature_raw'] as num?)?.toDouble() ?? 0.0;
+      rawHumidity = (rawData['humidity_raw'] as num?)?.toDouble() ?? 0.0;
+      rawSoilMoisture = (rawData['soil_moisture'] as num?)?.toDouble() ?? 0.0;
+      rawLightIntensity =
+          (rawData['light_intensity_raw'] as num?)?.toDouble() ?? 0.0;
+    }
+
+    overallHealth =
+        (waterLevel + humidityLevel + sunlightLevel + temperatureLevel) / 4;
+  }
+
+  Future<void> _generateAnalysis() async {
+    isLoadingAnalysis = true;
+    notifyListeners();
+
+    try {
+      final result = await _geminiService.getPlantAnalysis(
+        plantName: plantName,
+        species: plantSpecies,
+        personality: plantPersonality,
+        temperature: rawTemperature,
+        humidity: rawHumidity,
+        soilMoisture: rawSoilMoisture,
+        lightIntensity: rawLightIntensity,
+        overallHealth: overallHealth,
+        conditionLabel: conditionLabel,
+      );
+
+      if (result.isNotEmpty) {
+        analysisText = result;
+      } else {
+        analysisText = "$plantName is thinking…";
+      }
+    } catch (e) {
+      analysisText = "$plantName couldn't gather its thoughts right now.";
+      print('Error generating analysis: $e');
+    }
+
+    isLoadingAnalysis = false;
+    notifyListeners();
+  }
+
   Future<void> _fetchInitialData() async {
     setBusy(true);
     try {
       final data = await _firebaseService.getSensorData();
-      waterLevel = (data['water'] as num).toDouble();
-      humidityLevel = (data['humidity'] as num).toDouble();
-      sunlightLevel = (data['sunlight'] as num).toDouble();
-      temperatureLevel = (data['temperature'] as num).toDouble();
-
-      final rawData = data['raw_data'] as Map?;
-      if (rawData != null) {
-        rawTemperature =
-            (rawData['temperature_raw'] as num?)?.toDouble() ?? 0.0;
-        rawHumidity = (rawData['humidity_raw'] as num?)?.toDouble() ?? 0.0;
-        rawSoilMoisture = (rawData['soil_moisture'] as num?)?.toDouble() ?? 0.0;
-        rawLightIntensity =
-            (rawData['light_intensity_raw'] as num?)?.toDouble() ?? 0.0;
-      }
-
-      overallHealth =
-          (waterLevel + humidityLevel + sunlightLevel + temperatureLevel) / 4;
-
+      _updateFromData(data);
       notifyListeners();
     } catch (e) {
       print('Error fetching initial sensor data: $e');

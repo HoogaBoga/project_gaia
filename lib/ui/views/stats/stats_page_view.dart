@@ -141,7 +141,7 @@ class StatsPageView extends StackedView<StatsPageViewmodel> {
                   padding: const EdgeInsets.only(bottom: 15),
                   child: Column(
                     children: [
-                      _buildGeminiInsight(),
+                      _buildGeminiInsight(viewModel),
                       const SizedBox(
                         height: 10,
                       ),
@@ -246,7 +246,7 @@ class StatsPageView extends StackedView<StatsPageViewmodel> {
     );
   }
 
-  Widget _buildGeminiInsight() {
+  Widget _buildGeminiInsight(StatsPageViewmodel viewModel) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       padding: const EdgeInsets.all(16),
@@ -275,30 +275,52 @@ class StatsPageView extends StackedView<StatsPageViewmodel> {
                 color: Colors.purpleAccent, size: 20),
           ),
           const SizedBox(width: 14),
-          // The Text
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Gaia's Analysis",
-                  style: TextStyle(
+                  "${viewModel.plantName}'s Analysis",
+                  style: const TextStyle(
                     color: Colors.purpleAccent,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.0,
                   ),
                 ),
-                SizedBox(height: 4),
-                Text(
-                  "\"My water levels are critically low (20%). If you don't water me by tonight, I might start dropping leaves.\"",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    height: 1.4,
-                    fontStyle: FontStyle.italic,
+                const SizedBox(height: 4),
+                if (viewModel.isLoadingAnalysis)
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.purpleAccent.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "${viewModel.plantName} is thinking…",
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 14,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Text(
+                    viewModel.analysisText,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      height: 1.4,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
