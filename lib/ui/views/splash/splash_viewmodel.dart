@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:project_gaia/services/gemini_service.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:project_gaia/app/app.locator.dart';
 import 'package:project_gaia/app/app.router.dart';
 import 'package:project_gaia/services/firebase_service.dart';
+import 'package:project_gaia/services/gemini_service.dart';
 
 enum OnboardingStep {
   plantSpecies,
@@ -99,8 +99,8 @@ class SplashViewModel extends BaseViewModel {
 
       case OnboardingStep.plantPersonality:
         await _saveOnboardingData();
-        //go to HomeView  after saving
-        await _navigationService.navigateTo(Routes.mainLayout);
+        // Navigate to the dedicated generation page
+        _navigationService.navigateTo(Routes.generatingView);
         break;
     }
 

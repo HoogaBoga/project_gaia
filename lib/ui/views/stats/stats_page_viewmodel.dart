@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:stacked/stacked.dart';
 import 'package:project_gaia/app/app.locator.dart';
 import 'package:project_gaia/services/firebase_service.dart';
@@ -12,16 +13,50 @@ class StatsPageViewmodel extends BaseViewModel {
   double temperatureLevel = 0.0;
   double overallHealth = 0.0;
 
+  // Raw values for display
+  double rawTemperature = 0.0;
+  double rawHumidity = 0.0;
+  double rawSoilMoisture = 0.0;
+  double rawLightIntensity = 0.0;
+
+  String get conditionLabel {
+    if (overallHealth >= 0.8) return 'Excellent';
+    if (overallHealth >= 0.6) return 'Good';
+    if (overallHealth >= 0.4) return 'Fair';
+    if (overallHealth >= 0.2) return 'Poor';
+    return 'Critical';
+  }
+
+  Color get conditionColor {
+    if (overallHealth >= 0.8) return const Color(0xFF4CAF50);
+    if (overallHealth >= 0.6) return const Color(0xFF66BB6A);
+    if (overallHealth >= 0.4) return const Color(0xFFFFA726);
+    if (overallHealth >= 0.2) return const Color(0xFFEF5350);
+    return const Color(0xFFD32F2F);
+  }
+
   StreamSubscription? _sensorDataSubscription;
 
   void initializeData() {
     // Subscribe to real-time sensor data from Firebase
     _sensorDataSubscription = _firebaseService.getSensorDataStream().listen(
       (data) {
-        waterLevel = data['water'] as double;
-        humidityLevel = data['humidity'] as double;
-        sunlightLevel = data['sunlight'] as double;
-        temperatureLevel = data['temperature'] as double;
+        waterLevel = (data['water'] as num).toDouble();
+        humidityLevel = (data['humidity'] as num).toDouble();
+        sunlightLevel = (data['sunlight'] as num).toDouble();
+        temperatureLevel = (data['temperature'] as num).toDouble();
+
+        // Extract raw values for display
+        final rawData = data['raw_data'] as Map?;
+        if (rawData != null) {
+          rawTemperature =
+              (rawData['temperature_raw'] as num?)?.toDouble() ?? 0.0;
+          rawHumidity = (rawData['humidity_raw'] as num?)?.toDouble() ?? 0.0;
+          rawSoilMoisture =
+              (rawData['soil_moisture'] as num?)?.toDouble() ?? 0.0;
+          rawLightIntensity =
+              (rawData['light_intensity_raw'] as num?)?.toDouble() ?? 0.0;
+        }
 
         overallHealth =
             (waterLevel + humidityLevel + sunlightLevel + temperatureLevel) / 4;
@@ -44,10 +79,20 @@ class StatsPageViewmodel extends BaseViewModel {
     setBusy(true);
     try {
       final data = await _firebaseService.getSensorData();
-      waterLevel = data['water'] as double;
-      humidityLevel = data['humidity'] as double;
-      sunlightLevel = data['sunlight'] as double;
-      temperatureLevel = data['temperature'] as double;
+      waterLevel = (data['water'] as num).toDouble();
+      humidityLevel = (data['humidity'] as num).toDouble();
+      sunlightLevel = (data['sunlight'] as num).toDouble();
+      temperatureLevel = (data['temperature'] as num).toDouble();
+
+      final rawData = data['raw_data'] as Map?;
+      if (rawData != null) {
+        rawTemperature =
+            (rawData['temperature_raw'] as num?)?.toDouble() ?? 0.0;
+        rawHumidity = (rawData['humidity_raw'] as num?)?.toDouble() ?? 0.0;
+        rawSoilMoisture = (rawData['soil_moisture'] as num?)?.toDouble() ?? 0.0;
+        rawLightIntensity =
+            (rawData['light_intensity_raw'] as num?)?.toDouble() ?? 0.0;
+      }
 
       overallHealth =
           (waterLevel + humidityLevel + sunlightLevel + temperatureLevel) / 4;

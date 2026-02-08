@@ -1,4 +1,5 @@
 import 'package:project_gaia/services/gemini_service.dart';
+import 'package:project_gaia/services/remove_bg_service.dart';
 import 'package:project_gaia/ui/bottom_sheets/notice/notice_sheet.dart';
 import 'package:project_gaia/ui/dialogs/info_alert/info_alert_dialog.dart';
 import 'package:project_gaia/ui/views/home/home_view.dart';
@@ -8,6 +9,7 @@ import 'package:stacked/stacked_annotations.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:project_gaia/ui/views/splash/splash_view.dart';
 import 'package:project_gaia/ui/views/splash/splash_viewmodel.dart';
+import 'package:project_gaia/ui/views/generating/generating_view.dart';
 
 import 'package:project_gaia/ui/views/edit_plant/edit_plant_view.dart';
 import 'package:project_gaia/ui/dialogs/delete_plant/delete_plant_dialog.dart';
@@ -21,6 +23,7 @@ import 'package:project_gaia/services/firebase_service.dart';
     MaterialRoute(page: SplashView),
     MaterialRoute(page: MainLayout, initial: true),
     MaterialRoute(page: EditPlantView),
+    MaterialRoute(page: GeneratingView),
 // @stacked-route
   ],
   dependencies: [
@@ -29,6 +32,7 @@ import 'package:project_gaia/services/firebase_service.dart';
     LazySingleton(classType: NavigationService),
     LazySingleton(classType: FirebaseService),
     LazySingleton(classType: GeminiService),
+    LazySingleton(classType: RemoveBgService),
     // @stacked-service
   ],
   bottomsheets: [

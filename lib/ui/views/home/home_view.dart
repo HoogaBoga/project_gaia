@@ -168,53 +168,46 @@ class _HomeContentState extends State<_HomeContent>
                         offset: Offset(0, 200 * (1 - _plantAnim.value)),
                         child: Opacity(
                           opacity: _plantAnim.value.clamp(0.0, 1.0),
-                          child: Stack(
-                              alignment: Alignment.bottomCenter,
-                              clipBehavior: Clip.none,
-                              children: [
-                                Align(
-                                  alignment: Alignment.bottomCenter,
-                                  child: Image.asset(
-                                    'assets/images/earf 1.png',
-                                    fit: BoxFit.contain,
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Stack(
+                                alignment: Alignment.bottomCenter,
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Align(
                                     alignment: Alignment.bottomCenter,
+                                    child: Image.asset(
+                                      'assets/images/earf 1.png',
+                                      fit: BoxFit.contain,
+                                      alignment: Alignment.bottomCenter,
+                                    ),
                                   ),
-                                ),
-                                Positioned(
-                                    bottom: screenHeight * 0.25,
-                                    child: widget.viewModel.plantImageBytes !=
-                                            null
-                                        ? Container(
-                                            height: 280,
-                                            width: 280,
-                                            decoration:
-                                                BoxDecoration(boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black
-                                                    .withValues(alpha: 0.4),
-                                                blurRadius: 30,
-                                                offset: const Offset(0, 10),
-                                              )
-                                            ]),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(24.0),
-                                              child: Image.memory(
-                                                  widget.viewModel
-                                                      .plantImageBytes!,
-                                                  fit: BoxFit.contain),
-                                            ))
-                                        : widget.viewModel.isGeneratingImage
-                                            ? const SizedBox(
-                                                height: 50,
-                                                width: 50,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                        color:
-                                                            Colors.greenAccent),
-                                              )
-                                            : const SizedBox())
-                              ]),
+                                  // Position the plant so the pot sits ON and
+                                  // covers the sprout on the earth image
+                                  Positioned(
+                                      bottom: constraints.maxHeight * 0.15,
+                                      child: widget.viewModel.plantImageBytes !=
+                                              null
+                                          ? Image.memory(
+                                              widget.viewModel.plantImageBytes!,
+                                              height: 260,
+                                              width: 260,
+                                              fit: BoxFit.contain,
+                                            )
+                                          : widget.viewModel.isGeneratingImage
+                                              ? const SizedBox(
+                                                  height: 50,
+                                                  width: 50,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                          color: Colors
+                                                              .greenAccent),
+                                                )
+                                              : const SizedBox())
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),

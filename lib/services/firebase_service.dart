@@ -94,16 +94,69 @@ class FirebaseService {
     }
   }
 
-  // update visual state
+  // update visual state for a single zone
   Future<void> updatePlantVisuals(String imageUrl, String zone) async {
     try {
-      await _databaseRef.child('plants/gaia_01/visuals').set({
+      await _databaseRef.child('plants/gaia_01/visuals/$zone').set({
         'imageUrl': imageUrl,
-        'visualState': zone,
         'updated_at': ServerValue.timestamp,
       });
     } catch (e) {
       debugPrint('Error updating plant visuals: $e');
+    }
+  }
+
+  // Save all 3 zone image URLs at once
+  Future<void> updateAllPlantVisuals({
+    required String perfectUrl,
+    required String warningUrl,
+    required String criticalUrl,
+  }) async {
+    try {
+      await _databaseRef.child('plants/gaia_01/visuals').set({
+        'perfect': {
+          'imageUrl': perfectUrl,
+          'updated_at': ServerValue.timestamp
+        },
+        'warning': {
+          'imageUrl': warningUrl,
+          'updated_at': ServerValue.timestamp
+        },
+        'critical': {
+          'imageUrl': criticalUrl,
+          'updated_at': ServerValue.timestamp
+        },
+        'generated': true,
+      });
+    } catch (e) {
+      debugPrint('Error updating all plant visuals: $e');
+    }
+  }
+
+  // Get image URL for a specific health zone
+  Future<String?> getPlantVisualForZone(String zone) async {
+    try {
+      final snapshot = await _databaseRef
+          .child('plants/gaia_01/visuals/$zone/imageUrl')
+          .get();
+      if (snapshot.exists && snapshot.value != null) {
+        return snapshot.value.toString();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error getting visual for zone $zone: $e');
+      return null;
+    }
+  }
+
+  // Check if all 3 visuals have been generated
+  Future<bool> hasAllVisuals() async {
+    try {
+      final snapshot =
+          await _databaseRef.child('plants/gaia_01/visuals/generated').get();
+      return snapshot.exists && snapshot.value == true;
+    } catch (e) {
+      return false;
     }
   }
 
@@ -208,26 +261,24 @@ class FirebaseService {
 
   // Convert ESP32 raw data to normalized 0-1 scale
   Map<String, dynamic> _convertToNormalizedData(Map<dynamic, dynamic> data) {
-    // soil_moisture: 0-4095 (higher = drier, so we invert)
-    // soil_raw is the raw ADC value (4095 = dry, 0 = wet)
+    // soil_moisture is already a 0-100 percentage from the sensor
     final soilRaw = _parseDouble(data['soil_raw'] ?? 4095);
     final soilMoisture = _parseDouble(data['soil_moisture'] ?? 0);
 
-    // Convert soil moisture: invert so 0 (dry) becomes low, wet becomes high
-    // Assuming dry = 4095, wet = 0-1500 range
-    final waterLevel =
-        soilRaw > 0 ? (1 - (soilRaw / 4095)).clamp(0.0, 1.0) : soilMoisture;
+    // Use soil_moisture directly (0-100%) as the water level
+    final waterLevel = (soilMoisture / 100).clamp(0.0, 1.0);
 
-    // humidity: typically 0-100%, convert to 0-1
-    final humidity =
-        (_parseDouble(data['humidity'] ?? 0) / 100).clamp(0.0, 1.0);
+    // humidity: optimised for houseplants (50-80% is ideal)
+    final humRaw = _parseDouble(data['humidity'] ?? 0);
+    final humidity = _normalizeHumidity(humRaw);
 
-    // temperature: 0-50°C range, convert to 0-1 (assuming comfortable range is 15-35°C)
+    // temperature: optimised for houseplants (20-28°C is ideal)
     final temp = _parseDouble(data['temperature'] ?? 0);
-    final temperatureLevel = ((temp - 15) / 20).clamp(0.0, 1.0);
+    final temperatureLevel = _normalizeTemperature(temp);
 
-    // sunlight: not in current data, using default 0.5 or you can add light sensor
-    final sunlight = _parseDouble(data['sunlight'] ?? 0.5);
+    // light_intensity: optimised for houseplants (200-800 lux ideal)
+    final lightRaw = _parseDouble(data['light_intensity'] ?? 0);
+    final sunlight = _normalizeLight(lightRaw);
 
     return {
       'water': waterLevel,
@@ -238,10 +289,37 @@ class FirebaseService {
       'raw_data': {
         'soil_raw': soilRaw,
         'soil_moisture': soilMoisture,
-        'humidity_raw': _parseDouble(data['humidity'] ?? 0),
+        'humidity_raw': humRaw,
         'temperature_raw': temp,
+        'light_intensity_raw': lightRaw,
       }
     };
+  }
+
+  /// Houseplant-friendly temperature normalisation.
+  /// 20-28 °C  →  1.0  (optimal zone)
+  /// 0 °C      →  0.0  |  40 °C  →  0.0
+  double _normalizeTemperature(double temp) {
+    if (temp >= 20 && temp <= 28) return 1.0;
+    if (temp < 20) return (temp / 20).clamp(0.0, 1.0);
+    // 28→1.0 … 40→0.0
+    return ((40 - temp) / 12).clamp(0.0, 1.0);
+  }
+
+  /// Houseplant-friendly humidity normalisation.
+  /// 50-80 %  →  1.0 | <50 ramps down | >80 ramps down
+  double _normalizeHumidity(double hum) {
+    if (hum >= 50 && hum <= 80) return 1.0;
+    if (hum < 50) return (hum / 50).clamp(0.0, 1.0);
+    return ((100 - hum) / 20).clamp(0.0, 1.0);
+  }
+
+  /// Houseplant-friendly light normalisation.
+  /// 200-800 lux  →  1.0 | <200 ramps down | >800 ramps down
+  double _normalizeLight(double lux) {
+    if (lux >= 200 && lux <= 800) return 1.0;
+    if (lux < 200) return (lux / 200).clamp(0.0, 1.0);
+    return ((1500 - lux) / 700).clamp(0.0, 1.0);
   }
 
   // Update sensor data (for ESP32 to call)

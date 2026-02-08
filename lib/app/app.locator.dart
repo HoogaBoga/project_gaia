@@ -13,6 +13,7 @@ import 'package:stacked_shared/stacked_shared.dart';
 
 import '../services/firebase_service.dart';
 import '../services/gemini_service.dart';
+import '../services/remove_bg_service.dart';
 
 final locator = StackedLocator.instance;
 
@@ -30,4 +31,5 @@ Future<void> setupLocator({
   locator.registerLazySingleton(() => NavigationService());
   locator.registerLazySingleton(() => FirebaseService());
   locator.registerLazySingleton(() => GeminiService());
+  locator.registerLazySingleton(() => RemoveBgService());
 }

@@ -12,6 +12,7 @@ import 'package:http/http.dart' as http;
 class HomeViewModel extends BaseViewModel {
   String plantName = 'Gaia';
   String plantSpecies = 'Unknown Species';
+  String plantPersonality = 'Friendly';
 
   Map<String, dynamic>? _idealConditions;
 
@@ -35,6 +36,9 @@ class HomeViewModel extends BaseViewModel {
   String _lastVisualState = "";
   bool _isUpdatingDigitalTwin = false;
   bool _isInitialized = false;
+
+  // In-memory cache for all 3 zone images
+  final Map<String, Uint8List> _cachedImages = {};
 
   bool _showNotificationsOverlay = false;
   bool get showNotificationsOverlay => _showNotificationsOverlay;
@@ -136,84 +140,52 @@ class HomeViewModel extends BaseViewModel {
   }
 
   Future<void> _updateDigitalTwin() async {
-    if (_isUpdatingDigitalTwin) {
-      print("⏳ Already updating digital twin, skipping...");
-      return;
-    }
+    if (_isUpdatingDigitalTwin) return;
 
     String currentZone = _getHealthZone(currentHpPercent);
 
     if (currentZone == _lastVisualState && plantImageBytes != null) {
-      // print("✅ Same zone ($currentZone) - using existing image.");
       return;
     }
 
     _isUpdatingDigitalTwin = true;
 
     try {
-      print("🔍 Checking database for $currentZone image...");
-      final savedVisuals = await _firebaseService.getPlantVisuals();
-
-      if (savedVisuals != null && savedVisuals['visualState'] == currentZone) {
-        String? savedUrl = savedVisuals['imageUrl'];
-
-        if (savedUrl != null) {
-          print("✅ Found SAVED image in Firebase! Downloading...");
-
-          try {
-            final response = await http.get(Uri.parse(savedUrl));
-
-            if (response.statusCode == 200) {
-              plantImageBytes = response.bodyBytes;
-              _lastVisualState = currentZone;
-              notifyListeners();
-              print("✅ Using cached image from database!");
-              return;
-            }
-          } catch (e) {
-            print("❌ Failed to download cached image: $e");
-          }
-        }
-      }
-
-      if (isDevMode) {
-        print(
-            "🚧 DEV MODE: No cached image found, but skipping AI generation to save money.");
+      // Check in-memory cache first
+      if (_cachedImages.containsKey(currentZone)) {
+        plantImageBytes = _cachedImages[currentZone];
+        _lastVisualState = currentZone;
+        notifyListeners();
         return;
       }
 
-      print(
-          "🎨 No cached image found. Generating new image for $currentZone...");
-
+      // Fetch from Firebase
+      print("🔍 Fetching $currentZone image from database...");
       isGeneratingImage = true;
       notifyListeners();
 
-      String prompt = _buildPrompt(currentZone);
-      final newImage = await _geminiService.generateImage(prompt);
+      final imageUrl =
+          await _firebaseService.getPlantVisualForZone(currentZone);
 
-      if (newImage != null) {
-        plantImageBytes = newImage;
-        _lastVisualState = currentZone;
-
-        isGeneratingImage = false;
-        notifyListeners();
-
-        print("☁️ Uploading new image to Storage...");
-        _firebaseService
-            .uploadPlantImage(newImage, _plantId)
-            .then((downloadUrl) {
-          if (downloadUrl != null) {
-            print("💾 Saving link to Database...");
-            _firebaseService.updatePlantVisuals(downloadUrl, currentZone);
+      if (imageUrl != null) {
+        try {
+          final response = await http.get(Uri.parse(imageUrl));
+          if (response.statusCode == 200) {
+            plantImageBytes = response.bodyBytes;
+            _cachedImages[currentZone] = response.bodyBytes;
+            _lastVisualState = currentZone;
+            print("✅ Loaded $currentZone image from database!");
           }
-        }).catchError((error) {
-          print("❌ Upload/save failed: $error");
-        });
+        } catch (e) {
+          print("❌ Failed to download $currentZone image: $e");
+        }
       } else {
-        isGeneratingImage = false;
-        notifyListeners();
-        print("❌ Image generation failed");
+        print(
+            "⚠️ No image found for zone: $currentZone. Generate from splash page.");
       }
+
+      isGeneratingImage = false;
+      notifyListeners();
     } finally {
       _isUpdatingDigitalTwin = false;
     }
@@ -223,23 +195,6 @@ class HomeViewModel extends BaseViewModel {
     if (health >= 0.8) return "perfect";
     if (health >= 0.4) return "warning";
     return "critical";
-  }
-
-  String _buildPrompt(String zone) {
-    String visual = "";
-    switch (zone) {
-      case "perfect":
-        visual = "glowing neon green, vibrant, upright, floating spores";
-        break;
-      case "warning":
-        visual = "slightly drooping, matte texture, yellow edges";
-        break;
-      case "critical":
-        visual = "withered, brown crispy leaves, drooping, red warning lights";
-        break;
-    }
-
-    return "A 3D render of a $plantSpecies plant in a pot. The plant is $visual. Isometric view, transparent background";
   }
 
   // 4. Updated: Initialize now fetches profile and ideal conditions
@@ -259,6 +214,9 @@ class HomeViewModel extends BaseViewModel {
         // A. Fetch Plant Profile
         final profile = await _firebaseService.getPlantProfile();
         if (profile['name'] != null) plantName = profile['name']!;
+        if (profile['personality'] != null) {
+          plantPersonality = profile['personality']!;
+        }
         if (profile['species'] != null) {
           plantSpecies = profile['species']!;
           print("🌿 Identified Species: $plantSpecies");

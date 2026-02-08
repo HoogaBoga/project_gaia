@@ -66,15 +66,16 @@ class StatsPageView extends StackedView<StatsPageViewmodel> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.15),
+                    color: viewModel.conditionColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: Colors.green.withValues(alpha: 0.5), width: 1.5),
+                        color: viewModel.conditionColor.withValues(alpha: 0.5),
+                        width: 1.5),
                   ),
-                  child: const Text(
-                    "Condition: Good",
+                  child: Text(
+                    "Condition: ${viewModel.conditionLabel}",
                     style: TextStyle(
-                      color: Colors.greenAccent,
+                      color: viewModel.conditionColor,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
@@ -145,24 +146,24 @@ class StatsPageView extends StackedView<StatsPageViewmodel> {
                         height: 10,
                       ),
                       _buildLegend(
-                          Icons.water_drop, // Changed to filled icon
+                          Icons.water_drop,
                           "Water",
-                          "${(viewModel.waterLevel * 100).toInt()}%",
+                          "${viewModel.rawSoilMoisture.toInt()}%",
                           const Color(0xFF1250AE)),
                       _buildLegend(
                           Icons.cloud,
                           "Humidity",
-                          "${(viewModel.humidityLevel * 100).toInt()}%",
+                          "${viewModel.rawHumidity.toStringAsFixed(1)}%",
                           const Color(0xFF12C8ED)),
                       _buildLegend(
-                          Icons.wb_sunny, // Changed to filled icon
+                          Icons.wb_sunny,
                           "Sunlight",
-                          "${(viewModel.sunlightLevel * 100).toInt()}%",
+                          "${viewModel.rawLightIntensity.toInt()} lux",
                           const Color(0xFFEDBA12)),
                       _buildLegend(
                           Icons.thermostat,
                           "Temperature",
-                          "${(viewModel.temperatureLevel * 100).toInt()}%",
+                          "${viewModel.rawTemperature.toStringAsFixed(1)}°C",
                           const Color(0xFFED5712))
                     ],
                   ),
